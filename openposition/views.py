@@ -28,6 +28,7 @@ from dashboard.models import (
 )
 
 # serializers imports
+from openposition.serializers import OpenPositionSerializer
 # utils import
 from openposition.utils import get_skillsets_data
 from dashboard import tasks
@@ -166,37 +167,26 @@ class OpenPositionView(APIView):
             #     file = request.FILES[i]
             #     file = request.FILES[i]
             #     PositionDoc.objects.create(openposition=position_obj, file=file)
-            position_obj.client = request.data.get('client_id')
-            if position_obj.client_obj.id != request.data.get('client_id'):
+            if position_obj.client.id != request.data.get('client_id'):
                 try:
                     client_obj = Client.objects.get(id=request.data.get('client_id'))
-                    position_obj.client_obj = client_obj
+                    position_obj.client = client_obj
                 except:
                     pass
             position_obj.position_title = request.data.get('position_title')
             position_obj.reference = request.data.get('reference')
             position_obj.special_intruction = request.data.get('special_intruction')
-            if position_obj.hiring_group.group_id == request.data.get('hiring_group'):
+            current_grp = position_obj.hiring_group.group_id if position_obj.hiring_group else None 
+            if current_grp and current_grp == request.data.get('hiring_group'):
                 pass
             else:
-                position_obj.hiring_group = request.data.get('hiring_group')
-                position_obj.withdrawed_members = json.dumps([])
-
-                # send notification to assigned HTMs
                 try:
-                    hiring_group = HiringGroup.objects.get(group_id=position_obj.hiring_group)
-                    for profile_obj in hiring_group.members_list.all():
-                        if profile_obj is hiring_group.hod_profile:
-                            tasks.send_app_notification.delay(profile_obj.user.username, 'You have been assigned as the hiring manager for a new open position, ' + position_obj.position_title)
-                            tasks.push_notification.delay([profile_obj.user.username], 'Qorums Notification', 'You have been assigned as the hiring manager for a new open position, ' + position_obj.position_title)
-                        elif profile_obj is hiring_group.hr_profile:
-                            tasks.send_app_notification.delay(profile_obj.user.username, 'You have been assigned as the HR administrator for a new open position, ' + position_obj.position_title)
-                            tasks.push_notification.delay([profile_obj.user.username], 'Qorums Notification', 'You have been assigned as the HR administrator for a new open position, ' + position_obj.position_title)
-                        else:
-                            tasks.send_app_notification.delay(profile_obj.user.username, 'You have been assigned as a hiring team member for a new open position, ' + position_obj.position_title)
-                            tasks.push_notification.delay([profile_obj.user.username], 'Qorums Notification', 'You have been assigned as a hiring team member for a new open position, ' + position_obj.position_title)
-                except Exception as e:
-                    response['notification-error'] = str(e)
+                    group_obj = HiringGroup.objects.get(group_id=request.data.get('hiring_group'))
+                    position_obj.hiring_group = group_obj
+                    position_obj.withdrawed_members.clear() 
+                except:
+                    pass
+            
             position_obj.kickoff_start_date = request.data.get('kickoff_start_date')
             position_obj.sourcing_deadline = request.data.get('sourcing_deadline')
             position_obj.target_deadline = request.data.get('target_deadline')
@@ -207,10 +197,10 @@ class OpenPositionView(APIView):
 
             position_obj.other_criteria = request.data.get('other_criteria')
             position_obj.skillsets = get_skillsets_data(request.data)
-            if request.data.get('drafted') == 'False':
+            if request.data.get('drafted') in ['False', "false", False]:
                 position_obj.drafted = False
             else:
-                position_obj.drafted = request.data.get('drafted')
+                position_obj.drafted = True
             position_obj.currency = request.data.get('currency')
             position_obj.salary_range = request.data.get('salary_range')
             position_obj.local_preference = request.data.get('local_preference')
@@ -223,6 +213,10 @@ class OpenPositionView(APIView):
                 HTMsDeadline.objects.filter(open_position=position_obj).delete()
                 for deadline in json.loads(json.loads(request.data.get("htm_deadlines"))):
                     htm_prof = Profile.objects.get(id=int(deadline.get("htm")))
+                    position_obj.htms.add(htm_prof)
+                    position_obj.save()
+                    if htm_prof not in position_obj.htms.all():
+                        position_obj.withdrawed_members.remove(htm_prof)
                     HTMsDeadline.objects.create(open_position=position_obj, deadline=deadline.get('deadline'), htm=htm_prof, color=deadline.get('color'))
             except:
                 pass
@@ -232,4 +226,18 @@ class OpenPositionView(APIView):
         except Exception as e:
             return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-	
+    def get(self, request):
+        try:
+            openposition_objs = OpenPosition.objects.all()
+            openposition_serializers = OpenPositionSerializer(openposition_objs, many=True)
+            data = openposition_serializers.data
+            for i in data:
+                docs = []
+                for j in PositionDoc.objects.filter(openposition__id=i["id"]):
+                    docs.append(j.file.url)
+                i['documentations'] = docs
+            response = {}
+            response['data'] = data
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
