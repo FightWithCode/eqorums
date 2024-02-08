@@ -13,7 +13,7 @@ class Client(models.Model):
     """
         Used to store Client Information. 
     """
-
+    old_id = models.IntegerField(default=0)
     company_name = models.CharField(max_length=100)
     company_website = models.CharField(max_length=255, default="None", null=True, blank=True)
     company_linkedin = models.CharField(max_length=255, default="None", null=True, blank=True)

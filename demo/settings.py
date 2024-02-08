@@ -63,11 +63,11 @@ INSTALLED_APPS = [
     'channels',
 
     'corsheaders',
-    'dashboard',
     'websockets',
     'clients',
     'candidates',
-    'openposition'
+    'openposition',
+    'dashboard',
 ]
 
 REST_FRAMEWORK = {

@@ -45,7 +45,6 @@ class Profile(models.Model):
     cell_phone = models.CharField(max_length=17, blank=True, null=True)
     
     # For Candidates - Not used as of now.
-    user_key = models.CharField(max_length=18, default=secrets.token_urlsafe(12))
     
     skype_id = models.CharField(max_length=100, null=True, blank=True)
     email = models.CharField(max_length=255, unique=True) # Check all the email before migration on server

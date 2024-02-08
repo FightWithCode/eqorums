@@ -1,7 +1,7 @@
 demo/__pycache__/
 dashboard/migrations/
 dashboard/migrations/__pycache__/
-
+raw-sql-*.py
 clients/migrations/__pycache__/
 clients/migrations/
 candidates/migrations/__pycache__/
