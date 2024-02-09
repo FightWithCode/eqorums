@@ -23,6 +23,7 @@ class OpenPosition(models.Model):
     """
         Stores all the Open Positions of a Client
     """
+    old_id = models.IntegerField(default=0)
     position_id = models.CharField(default=None, max_length=25, null=True, blank=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     position_title = models.CharField(max_length=100)
