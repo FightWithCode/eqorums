@@ -40,6 +40,7 @@ class Profile(models.Model):
         Proxy model to use User model. It contains all the related 
         data to all the users like SA, QA, HTM, HM SM
     """
+    old_id = models.IntegerField(default=0)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=17, blank=False)
     cell_phone = models.CharField(max_length=17, blank=True, null=True)
