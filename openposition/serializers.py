@@ -14,31 +14,15 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 	position_completion = serializers.SerializerMethodField(read_only=True)
 	formated_target_deadline = serializers.SerializerMethodField(read_only=True)
 	has_pending_int = serializers.SerializerMethodField(read_only=True)
-	hiring_manager = serializers.SerializerMethodField(read_only=True)
-	hiring_team = serializers.SerializerMethodField(read_only=True)
 	position_filled = serializers.SerializerMethodField(read_only=True)
 	status = serializers.SerializerMethodField(read_only=True)
 
 	class Meta:
 		model = OpenPosition
 		fields = '__all__'
-	def get_hiring_manager(self, obj):
-		try:
-			hiring_group_obj = HiringGroup.objects.get(group_id=obj.hiring_group)
-			if hiring_group_obj.hod_profile:
-				return hiring_group_obj.hod_profile.user.get_full_name()
-			else:
-				return "Not Selected"
-		except Exception as e:
-			return "No Team"
-	def get_hiring_team(self, obj):
-		try:
-			hiring_group_obj = HiringGroup.objects.get(group_id=obj.hiring_group)
-			return hiring_group_obj.name
-		except Exception as e:
-			return "No Team"
 	def get_position_filled(self, obj):
-		return Hired.objects.filter(op_id=obj.id).count()
+		return 0
+		# return Hired.objects.filter(op_id=obj.id).count()
 	def get_status(self, obj):
 		if obj.drafted:
 			return "Drafted"
@@ -66,10 +50,11 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 	
 	def get_has_pending_int(self, obj):
 		candidate_id = self.context.get("candidate_id")
-		if Interview.objects.filter(op_id__id=obj.id, candidate__candidate_id=candidate_id).filter(disabled=False).filter(accepted=None):
-			return True
-		else:
-			return False
+		return False
+		# if Interview.objects.filter(op_id__id=obj.id, candidate__candidate_id=candidate_id).filter(disabled=False).filter(accepted=None):
+		# 	return True
+		# else:
+		# 	return False
 	def get_members(self, obj):
 		try:
 			group_obj = HiringGroup.objects.get(group_id=obj.hiring_group)

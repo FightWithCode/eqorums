@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from clients.models import Client
 
 def get_json_default():
     return {}
@@ -14,8 +15,9 @@ class Candidate(models.Model):
         Contains Data of a Candidate that has been created.
         Many of the fields are not used now.
     """
+    old_id = models.IntegerField(default=0)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    created_by_client = models.IntegerField(default=0)
+    created_by_client = models.ForeignKey(Client, default=None, null=True, blank=True, on_delete=models.SET_NULL)
     username = models.CharField(max_length=255, default='None')
     key = models.CharField(max_length=255, default='None')
     candidate_id = models.AutoField(primary_key=True)
