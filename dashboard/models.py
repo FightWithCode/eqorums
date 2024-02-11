@@ -132,6 +132,7 @@ class CandidateMarks(models.Model):
         Stores marks of candidates which are given by
         different HTMs
     """
+    old_id = models.IntegerField(default=0)
     candidate_id = models.IntegerField()
     marks_given_by = models.IntegerField()
     op_id = models.IntegerField()

@@ -1,3 +1,6 @@
+# python imports
+import json
+
 # drf imports
 from rest_framework import serializers
 
@@ -6,6 +9,9 @@ from openposition.models import (
     OpenPosition,
 	HTMsDeadline,
 	HiringGroup
+)
+from candidates.models import (
+	Candidate
 )
 
 class OpenPositionSerializer(serializers.ModelSerializer):

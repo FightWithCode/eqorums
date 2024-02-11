@@ -136,3 +136,44 @@ class HiringGroup(models.Model):
     members_list = models.ManyToManyField(Profile, default=None, blank=True, null=True)
     client_id = models.IntegerField(default=0, null=True, blank=True)
     disabled = models.BooleanField(default=False)
+
+
+class CandidateMarks(models.Model):
+    """
+        Stores marks of candidates which are given by
+        different HTMs
+    """
+    old_id = models.IntegerField()
+    candidate_id = models.IntegerField()
+    marks_given_by = models.IntegerField()
+    op_id = models.IntegerField()
+    client_id = models.IntegerField(default=0)
+    
+    # marks = models.JSONField(default=get_listed_json_default)
+
+    criteria_1_marks = models.FloatField(null=True, blank=True)
+    criteria_2_marks = models.FloatField(null=True, blank=True)
+    criteria_3_marks = models.FloatField(null=True, blank=True)
+    criteria_4_marks = models.FloatField(null=True, blank=True)
+    criteria_5_marks = models.FloatField(null=True, blank=True)
+    criteria_6_marks = models.FloatField(null=True, blank=True)
+    criteria_7_marks = models.FloatField(null=True, blank=True)
+    criteria_8_marks = models.FloatField(null=True, blank=True)
+
+    suggestion_1 = models.TextField(null=True, blank=True, default="None")
+    suggestion_2 = models.TextField(null=True, blank=True, default="None")
+    suggestion_3 = models.TextField(null=True, blank=True, default="None")
+    suggestion_4 = models.TextField(null=True, blank=True, default="None")
+    suggestion_5 = models.TextField(null=True, blank=True, default="None")
+    suggestion_6 = models.TextField(null=True, blank=True, default="None")
+    suggestion_7 = models.TextField(null=True, blank=True, default="None")
+    suggestion_8 = models.TextField(null=True, blank=True, default="None")
+
+    all_marks_given = models.BooleanField(default=False)
+    thumbs_up = models.BooleanField(default=False)
+    thumbs_down = models.BooleanField(default=False)
+    hold = models.BooleanField(default=False)
+    thumbs = models.IntegerField(default=0) # 1 - for thumbs up, 2 - for thumbs down, 3 - for hold
+    golden_gloves = models.BooleanField(default=False)
+    feedback_date = models.DateField(auto_now=True)
+    feedback = models.TextField(default='None', null=True, blank=True)
