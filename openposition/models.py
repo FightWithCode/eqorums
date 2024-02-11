@@ -198,3 +198,9 @@ class Interview(models.Model):
     accepted = models.BooleanField(default=None, null=True, blank=True)
     conference_id = models.CharField(max_length=50, default=None, null=True, blank=True)
     disabled = models.BooleanField(default=False)
+
+
+class Hired(models.Model):
+    candidate_id = models.IntegerField()
+    op_id = models.IntegerField()
+    created = models.DateTimeField(auto_now_add=True)
