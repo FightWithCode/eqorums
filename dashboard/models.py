@@ -255,24 +255,24 @@ class CandidateAvailability(models.Model):
         super(CandidateAvailability, self).save(*args, **kwargs)
 
 
-class Interview(models.Model):
-    op_id = models.ForeignKey("openposition.OpenPosition", default=None, null=True, blank=True, on_delete=models.CASCADE)
-    created_by = models.ForeignKey(Profile, default=None, null=True, blank=True, on_delete=models.SET_NULL, related_name="created_by")
-    htm = models.ManyToManyField(Profile, default=None, null=True, blank=True)
-    candidate = models.ForeignKey("candidates.Candidate", on_delete=models.CASCADE, default=None, blank=True, null=True)
-    subject = models.CharField(max_length=255, default="No Subject")
-    body = models.TextField(default="No Body")
-    zoom_link = models.TextField(default="none", null=True, blank=True)
-    interview_date_time = models.DateTimeField(default=None, null=True, blank=True)
-    texted_start_time = models.CharField(max_length=255, default=json.dumps([]))
-    duration = models.IntegerField(default=30) # in minutes
-    initial_informed = models.BooleanField(default=False)
-    informed = models.BooleanField(default=False)
-    meeting_key = models.CharField(max_length=256, default=None, null=True, blank=True)
-    interview_type = models.CharField(max_length=255, default="zoho")
-    accepted = models.BooleanField(default=None, null=True, blank=True)
-    conference_id = models.CharField(max_length=50, default=None, null=True, blank=True)
-    disabled = models.BooleanField(default=False)
+# class Interview(models.Model):
+#     op_id = models.ForeignKey("openposition.OpenPosition", default=None, null=True, blank=True, on_delete=models.CASCADE)
+#     created_by = models.ForeignKey(Profile, default=None, null=True, blank=True, on_delete=models.SET_NULL, related_name="created_by")
+#     htm = models.ManyToManyField(Profile, default=None, null=True, blank=True)
+#     candidate = models.ForeignKey("candidates.Candidate", on_delete=models.CASCADE, default=None, blank=True, null=True)
+#     subject = models.CharField(max_length=255, default="No Subject")
+#     body = models.TextField(default="No Body")
+#     zoom_link = models.TextField(default="none", null=True, blank=True)
+#     interview_date_time = models.DateTimeField(default=None, null=True, blank=True)
+#     texted_start_time = models.CharField(max_length=255, default=json.dumps([]))
+#     duration = models.IntegerField(default=30) # in minutes
+#     initial_informed = models.BooleanField(default=False)
+#     informed = models.BooleanField(default=False)
+#     meeting_key = models.CharField(max_length=256, default=None, null=True, blank=True)
+#     interview_type = models.CharField(max_length=255, default="zoho")
+#     accepted = models.BooleanField(default=None, null=True, blank=True)
+#     conference_id = models.CharField(max_length=50, default=None, null=True, blank=True)
+#     disabled = models.BooleanField(default=False)
 
 
 class APIData(models.Model):

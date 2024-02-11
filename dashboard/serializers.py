@@ -2,7 +2,7 @@ from rest_framework import serializers
 import json
 from datetime import datetime
 from clients.models import Client, ClientPackage, Package
-from openposition.models import OpenPosition, HiringGroup, HTMsDeadline
+from openposition.models import Interview, OpenPosition, HiringGroup, HTMsDeadline
 from .models import (
 	Profile,
 	PositionTitle,
@@ -19,7 +19,6 @@ from .models import (
 	EmailTemplate,
 	ExtraAccountsPrice,
 	BillingDetail,
-	Interview,
 	Hired,
 	StripePayments
 )

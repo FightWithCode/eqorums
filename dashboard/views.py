@@ -79,7 +79,9 @@ from clients.models import Client, Package, ClientPackage
 from openposition.models import (
 	OpenPosition,
 	HTMsDeadline,
-	HiringGroup
+	HiringGroup,
+	Interview,
+	CandidateMarks
 )
 from clients.serializers import ClientSerializer
 from .models import (
@@ -87,7 +89,6 @@ from .models import (
 	PositionTitle,
 	QualifyingQuestion,
 	OpenPositionStageCompletion,
-	CandidateMarks,
 	# Department,
 	InterviewSchedule,
 	TempCandidate,
@@ -98,7 +99,6 @@ from .models import (
 	ScheduleTemplate,
 	HTMWeightage,
 	HTMAvailability,
-	Interview,
 	APIData,
 	SelectedAnalyticsDashboard,
 	ProTip,

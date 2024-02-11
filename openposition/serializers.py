@@ -1,5 +1,6 @@
 # python imports
 import json
+from datetime import datetime
 
 # drf imports
 from rest_framework import serializers
@@ -8,7 +9,8 @@ from rest_framework import serializers
 from openposition.models import (
     OpenPosition,
 	HTMsDeadline,
-	HiringGroup
+	HiringGroup,
+	CandidateMarks
 )
 from candidates.models import (
 	Candidate

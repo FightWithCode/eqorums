@@ -1,11 +1,11 @@
 from openposition.models import (
 	OpenPosition,
-	HiringGroup
+	HiringGroup,
+	Interview
 )
 from candidates.models import Candidate
 from .models import (
 	CandidateMarks,
-	Interview,
 	CandidateAssociateData,
 	EmailTemplate
 )
