@@ -81,7 +81,8 @@ from openposition.models import (
 	HTMsDeadline,
 	HiringGroup,
 	Interview,
-	CandidateMarks
+	CandidateMarks,
+	CandidateAssociateData
 )
 from clients.serializers import ClientSerializer
 from .models import (
@@ -103,7 +104,6 @@ from .models import (
 	SelectedAnalyticsDashboard,
 	ProTip,
 	Offered,
-	CandidateAssociateData,
 	CandidateAvailability,
 	EvaluationComment,
 	WithdrawCandidateData,

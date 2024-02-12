@@ -303,32 +303,32 @@ class ProTip(models.Model):
     # Add more here if required
 
 
-class CandidateAssociateData(models.Model):
-    candidate = models.ForeignKey("candidates.Candidate", on_delete=models.CASCADE)   
-    open_position = models.ForeignKey("openposition.OpenPosition", on_delete=models.CASCADE)
-    nickname = models.CharField(max_length=255, default=None, blank=True, null=True)
-    location = models.CharField(max_length=255, default=None, blank=True, null=True)
-    currently = models.CharField(max_length=255, default=None, blank=True, null=True)
-    email = models.CharField(max_length=255, default=None, blank=True, null=True)
-    phone = models.CharField(max_length=255, default=None, blank=True, null=True)
-    linkedin = models.CharField(max_length=255, default=None, blank=True, null=True)
-    generalComments = models.TextField(default=None, blank=True, null=True)
-    remote_only = models.BooleanField(default=True)
-    remote_pref = models.BooleanField(default=True)
-    some_in_office = models.BooleanField(default=True)
-    office_only = models.BooleanField(default=True)
-    work_auth = models.CharField(max_length=255, null=True, blank=True)
-    currency = models.CharField(max_length=10, null=True, blank=True, default='$')
-    salary_req = models.CharField(max_length=255, null=True, blank=True)
-    desired_work_location = models.JSONField(default=get_json_default)
-    comments = models.CharField(max_length=255, null=True, blank=True)
-    resume = models.JSONField(default=get_listed_json_default)
-    references = models.JSONField(default=get_listed_json_default)
-    pro_marketting = models.BooleanField(default=False)
-    association_date = models.DateField(default=None, null=True, blank=True)
-    # None - Requested, True - Acceppted, False - Rejected
-    accepted = models.BooleanField(default=None, null=True, blank=True)
-    withdrawed = models.BooleanField(default=False)
+# class CandidateAssociateData(models.Model):
+#     candidate = models.ForeignKey("candidates.Candidate", on_delete=models.CASCADE)   
+#     open_position = models.ForeignKey("openposition.OpenPosition", on_delete=models.CASCADE)
+#     nickname = models.CharField(max_length=255, default=None, blank=True, null=True)
+#     location = models.CharField(max_length=255, default=None, blank=True, null=True)
+#     currently = models.CharField(max_length=255, default=None, blank=True, null=True)
+#     email = models.CharField(max_length=255, default=None, blank=True, null=True)
+#     phone = models.CharField(max_length=255, default=None, blank=True, null=True)
+#     linkedin = models.CharField(max_length=255, default=None, blank=True, null=True)
+#     generalComments = models.TextField(default=None, blank=True, null=True)
+#     remote_only = models.BooleanField(default=True)
+#     remote_pref = models.BooleanField(default=True)
+#     some_in_office = models.BooleanField(default=True)
+#     office_only = models.BooleanField(default=True)
+#     work_auth = models.CharField(max_length=255, null=True, blank=True)
+#     currency = models.CharField(max_length=10, null=True, blank=True, default='$')
+#     salary_req = models.CharField(max_length=255, null=True, blank=True)
+#     desired_work_location = models.JSONField(default=get_json_default)
+#     comments = models.CharField(max_length=255, null=True, blank=True)
+#     resume = models.JSONField(default=get_listed_json_default)
+#     references = models.JSONField(default=get_listed_json_default)
+#     pro_marketting = models.BooleanField(default=False)
+#     association_date = models.DateField(default=None, null=True, blank=True)
+#     # None - Requested, True - Acceppted, False - Rejected
+#     accepted = models.BooleanField(default=None, null=True, blank=True)
+#     withdrawed = models.BooleanField(default=False)
 
 
 class EvaluationComment(models.Model):
