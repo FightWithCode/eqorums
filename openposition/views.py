@@ -29,6 +29,7 @@ from dashboard.models import (
 
 # serializers imports
 from openposition.serializers import OpenPositionSerializer
+
 # utils import
 from openposition.utils import get_skillsets_data
 from dashboard import tasks
@@ -66,7 +67,9 @@ class OpenPositionView(APIView):
                 drafted = False
             else:
                 drafted = True
+            
             skillsets = get_skillsets_data(request.data)
+            
             position_obj = OpenPosition.objects.create(
                 client=client_obj,
                 position_title=request.data.get('position_title'),
@@ -236,6 +239,10 @@ class OpenPositionView(APIView):
                 for j in PositionDoc.objects.filter(openposition__id=i["id"]):
                     docs.append(j.file.url)
                 i['documentations'] = docs
+                for skillset in i["skillsets"]:
+                    for skill in skillset:
+                        i[skill] = skillset[skill]
+                del i["skillsets"]
             response = {}
             response['data'] = data
             return Response(response, status=status.HTTP_200_OK)

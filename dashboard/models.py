@@ -99,17 +99,6 @@ class QualifyingQuestion(models.Model):
         return self.question
 
 
-class CandidateStatus(models.Model):
-    candidate_id = models.IntegerField()
-    op_id = models.IntegerField()
-    shortlist_status = models.BooleanField(default=False)
-    make_offer_status = models.BooleanField(default=False)
-    finall_selection_status = models.BooleanField(default=False)
-
-    def __str__(self):
-        return str(self.candidate_id)
-
-
 class CandidatePositionDetails(models.Model):
     candidate_id = models.IntegerField()
     op_id = models.IntegerField()

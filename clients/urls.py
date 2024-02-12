@@ -20,4 +20,9 @@ urlpatterns = [
         views.GetAllClientsData.as_view(),
         name="get-all-client",
     ),
+    path(
+        "get-client-positions/<int:client_id>",
+        views.GetPositionByClient.as_view(),
+        name="get-client-positions"
+    ),
 ]

@@ -2,7 +2,7 @@ from rest_framework import serializers
 import json
 from datetime import datetime
 from clients.models import Client, ClientPackage, Package
-from openposition.models import Interview, OpenPosition, HiringGroup, HTMsDeadline, CandidateAssociateData
+from openposition.models import Interview, OpenPosition, HiringGroup, HTMsDeadline, CandidateAssociateData, CandidateStatus
 from .models import (
 	Profile,
 	PositionTitle,
@@ -10,7 +10,6 @@ from .models import (
 	OpenPositionStageCompletion,
 	CandidateMarks,
 	Department,
-	CandidateStatus,
 	ScheduleTemplate,
 	HTMWeightage,
 	ProTip,

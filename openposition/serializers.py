@@ -10,11 +10,15 @@ from openposition.models import (
     OpenPosition,
 	HTMsDeadline,
 	HiringGroup,
-	CandidateMarks
+	CandidateMarks,
+	Hired,
+	HTMsDeadline,
+	Interview
 )
 from candidates.models import (
 	Candidate
 )
+from dashboard.models import HTMAvailability
 
 class OpenPositionSerializer(serializers.ModelSerializer):
 	updated_by_name = serializers.SerializerMethodField(read_only=True)
@@ -29,8 +33,7 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 		model = OpenPosition
 		fields = '__all__'
 	def get_position_filled(self, obj):
-		return 0
-		# return Hired.objects.filter(op_id=obj.id).count()
+		return Hired.objects.filter(op_id=obj.id).count()
 	def get_status(self, obj):
 		if obj.drafted:
 			return "Drafted"
@@ -58,11 +61,10 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 	
 	def get_has_pending_int(self, obj):
 		candidate_id = self.context.get("candidate_id")
-		return False
-		# if Interview.objects.filter(op_id__id=obj.id, candidate__candidate_id=candidate_id).filter(disabled=False).filter(accepted=None):
-		# 	return True
-		# else:
-		# 	return False
+		if Interview.objects.filter(op_id__id=obj.id, candidate__candidate_id=candidate_id).filter(disabled=False).filter(accepted=None):
+			return True
+		else:
+			return False
 	def get_members(self, obj):
 		try:
 			group_obj = HiringGroup.objects.get(group_id=obj.hiring_group)

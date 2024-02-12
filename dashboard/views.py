@@ -82,7 +82,8 @@ from openposition.models import (
 	HiringGroup,
 	Interview,
 	CandidateMarks,
-	CandidateAssociateData
+	CandidateAssociateData,
+	CandidateStatus
 )
 from clients.serializers import ClientSerializer
 from .models import (
@@ -93,7 +94,6 @@ from .models import (
 	# Department,
 	InterviewSchedule,
 	TempCandidate,
-	CandidateStatus,
 	CandidatePositionDetails,
 	AskedNotification,
 	Hired,
