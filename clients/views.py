@@ -468,7 +468,11 @@ class GetAllClientsData(APIView):
 					temp_client["subscription"] = ClientPackage.objects.get(client=client).package.name
 				except:
 					temp_client["subscription"] = None
-				temp_client["payment"] = StripePayments.objects.filter(client=client).aggregate(Sum('amount')).get("amount__sum")
+				total_payments = StripePayments.objects.filter(client=client).aggregate(Sum('amount')).get("amount__sum")
+				if total_payments:
+					temp_client["payment"] = total_payments
+				else:
+					temp_client["payment"] = 0
 				temp_client["no_of_clients"] = Candidate.objects.filter(created_by_client=client.id).count()
 				temp_client["interviews_conducted"] = 0
 				temp_client["no_of_position"] = OpenPosition.objects.filter(client=client).count()
