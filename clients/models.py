@@ -9,6 +9,12 @@ SUBS_STATUS = (
     ("inactive", "Inactive"),
 )
 
+CLIENT_STATUS = (
+    ("active", "Active"),
+    ("hold", "Hold"),
+    ("inactive", "Inactive"),
+)
+
 class Client(models.Model):
     """
         Used to store Client Information. 
@@ -61,6 +67,7 @@ class Client(models.Model):
     # Account Manager which is assinged - In Qorums it is Qorum Support and only visible to SA
     ae_assigned = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True, blank=True, related_name="ae_assigned")
     disabled = models.BooleanField(default=False)
+    status = models.CharField(max_length=255, choices=CLIENT_STATUS, default="active")
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

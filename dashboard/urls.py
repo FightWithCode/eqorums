@@ -776,11 +776,6 @@ urlpatterns = [
         name="reset-candidate-creds"
     ),
     path(
-        "get-client-positions/<int:client_id>",
-        views.GetPositionByClient.as_view(),
-        name="get-client-positions"
-    ),
-    path(
         "get-multiple-questions",
         views.GetMultipleQuestionsView.as_view(),
         name="get-multiple-questions"

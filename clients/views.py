@@ -1,6 +1,7 @@
 #  Python imports
 import json
 from datetime import datetime
+import random
 
 # Django imports 
 from django.contrib.auth.models import User
@@ -461,6 +462,10 @@ class GetAllClientsData(APIView):
 				except:
 					return Response({}, status=status.HTTP_200_OK)
 			client_data = []
+			status = request.GET.get("status")
+			
+			if status:
+				clients_objs = clients_objs.filter(status=status)
 			for client in clients_objs:
 				temp_client = {}
 				temp_client["id"] = client.id
