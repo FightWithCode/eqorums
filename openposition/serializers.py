@@ -9,7 +9,6 @@ from rest_framework import serializers
 from openposition.models import (
     OpenPosition,
 	HTMsDeadline,
-	HiringGroup,
 	CandidateMarks,
 	Hired,
 	HTMsDeadline,
@@ -19,6 +18,7 @@ from candidates.models import (
 	Candidate
 )
 from dashboard.models import HTMAvailability
+from hiringgroup.models import HiringGroup
 
 class OpenPositionSerializer(serializers.ModelSerializer):
 	updated_by_name = serializers.SerializerMethodField(read_only=True)

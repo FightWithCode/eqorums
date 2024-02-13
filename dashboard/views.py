@@ -79,12 +79,12 @@ from clients.models import Client, Package, ClientPackage
 from openposition.models import (
 	OpenPosition,
 	HTMsDeadline,
-	HiringGroup,
 	Interview,
 	CandidateMarks,
 	CandidateAssociateData,
 	CandidateStatus
 )
+from hiringgroup.models import HiringGroup
 from clients.serializers import ClientSerializer
 from .models import (
 	Profile,

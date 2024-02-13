@@ -25,7 +25,6 @@ from openposition.models import (
 	CandidateAssociateData,
 	HTMsDeadline,
 	Hired,
-	HiringGroup,
 	CandidateStatus
 )
 from clients.models import (
@@ -37,6 +36,10 @@ from clients.models import (
 from candidates.models import (
 	Candidate
 )
+from hiringgroup.models import (
+	HiringGroup
+)
+
 
 # Serializers import
 from clients.serializers import (

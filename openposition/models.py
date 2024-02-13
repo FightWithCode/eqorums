@@ -33,7 +33,7 @@ class OpenPosition(models.Model):
     reference = models.TextField(null=True, blank=True)
     special_intruction = models.TextField(null=True, blank=True)
 
-    hiring_group = models.ForeignKey("openposition.HiringGroup", on_delete=models.SET_NULL, null=True, blank=True)
+    hiring_group = models.ForeignKey("hiringgroup.HiringGroup", on_delete=models.SET_NULL, null=True, blank=True)
     htms = models.ManyToManyField(Profile, related_name="htms")
     htms_color = models.JSONField(default=get_listed_json_default)
     withdrawed_members = models.ManyToManyField(Profile, related_name="withdrawed_members")
@@ -127,18 +127,6 @@ class HTMsDeadline(models.Model):
     htm = models.ForeignKey(Profile, on_delete=models.CASCADE)
     deadline = models.DateTimeField()
     color = models.CharField(max_length=10, default="#ff00aa", null=True, blank=True)
-
-
-class HiringGroup(models.Model):
-    """
-        Contains details of a Hiring Group
-    """
-    group_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
-    members_list = models.ManyToManyField(Profile, default=None, blank=True, null=True)
-    client_id = models.IntegerField(default=0, null=True, blank=True)
-    disabled = models.BooleanField(default=False)
 
 
 class CandidateAssociateData(models.Model):

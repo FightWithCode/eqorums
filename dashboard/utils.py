@@ -1,6 +1,5 @@
 from openposition.models import (
 	OpenPosition,
-	HiringGroup,
 	Interview,
 	CandidateAssociateData
 )
@@ -10,6 +9,7 @@ from .models import (
 	EmailTemplate
 )
 from clients.models import Client
+from hiringgroup.models import HiringGroup
 from .serializers import OpenPositionSerializer, CandidateSerializer
 import json
 from django.db.models.functions import TruncMonth
@@ -487,12 +487,8 @@ def get_interview_data(user):
 		# 		except Exception as e:
 		# 			print(e, '-------')
 		try:
-			group_obj = HiringGroup.objects.get(group_id=op_obj.hiring_group)
-			members = group_obj.members_list.all()
-			if group_obj.hr_profile in members:
-				members_len = members.count() - 1
-			else:
-				members_len = members.count()
+			members = op_obj.htms.all()
+			members_len = members.count()
 		except:
 			members = []
 			members_len = 0
@@ -594,8 +590,7 @@ def get_client_interview_data(client_id):
 		for cao in CandidateAssociateData.objects.filter(open_position__id=op, withdrawed=False, accepted=True):
 			candidates.append(cao.candidate.candidate_id)
 			all_candidate.append(cao.candidate.candidate_id)
-		group_obj = HiringGroup.objects.get(group_id=op_obj.hiring_group)
-		members = group_obj.members_list.all()
+		members = op_obj.htms.all()
 		if group_obj.hr_profile in members:
 			members_len = members.count() - 1
 		else:

@@ -15,13 +15,13 @@ import json
 from django.template.loader import get_template
 from openposition.models import (
 	OpenPosition,
-	HiringGroup,
 	Interview
 )
 from dashboard.models import Profile, EmailTemplate
 from datetime import timedelta
 from candidates.models import Candidate
 from clients.models import ClientPackage, Client
+from hiringgroup.models import HiringGroup
 import os
 from django.conf import settings
 

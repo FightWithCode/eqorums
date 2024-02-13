@@ -19,7 +19,6 @@ from openposition.models import (
 	PositionDoc,
     OpenPosition,
 	HTMsDeadline,
-	HiringGroup,
 	Interview,
 	CandidateMarks,
 	CandidateAssociateData,
@@ -36,7 +35,12 @@ from dashboard.models import (
 	EmailTemplate,
 	HTMAvailability
 )
-from candidates.models import Candidate
+from candidates.models import (
+	Candidate
+)
+from hiringgroup.models import (
+	HiringGroup
+)
 
 # serializers imports
 from openposition.serializers import OpenPositionSerializer
