@@ -472,6 +472,7 @@ class GetAllClientsData(APIView):
 				temp_client["no_of_clients"] = Candidate.objects.filter(created_by_client=client.id).count()
 				temp_client["interviews_conducted"] = 0
 				temp_client["no_of_position"] = OpenPosition.objects.filter(client=client).count()
+				temp_client["no_of_candidates"] = Candidate.objects.filter(created_by_client=client).count()
 				temp_client["last_updated"] = client.updated_at.strftime("%m-%d-%Y")
 				temp_client["payment_due"] = client.updated_at.strftime("%m-%d-%Y")
 				temp_client["phone_no"] = client.company_contact_phone
