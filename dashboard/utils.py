@@ -591,10 +591,7 @@ def get_client_interview_data(client_id):
 			candidates.append(cao.candidate.candidate_id)
 			all_candidate.append(cao.candidate.candidate_id)
 		members = op_obj.htms.all()
-		if group_obj.hr_profile in members:
-			members_len = members.count() - 1
-		else:
-			members_len = members.count()
+		members_len = members.count()
 		interviews_count += len(candidates) * members_len
 	all_candidate = set(all_candidate)
 	# interviews_scheduled = Interview.objects.filter(op_id__in=open_position_list).count()
