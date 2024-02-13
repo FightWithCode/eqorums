@@ -8409,7 +8409,7 @@ class SelectAnalyticsView(APIView):
 				obj.selected = json.dumps(selected)
 				obj.save()
 			selected_resp = json.loads(obj.selected)
-			if request.user.profile.is_ca or request.user.profile.is_sm:
+			if "is_ca" in request.user.profile.roles or "is_sm" in request.user.profile.roles:
 				op = [
 					{"class": 'active-clients',"label": 'Active Clients',"isSelected": True},
 					{"class": 'active-clients',"label": 'Active Clients',"isSelected": False}
@@ -8435,7 +8435,7 @@ class SelectAnalyticsView(APIView):
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			response['msg'] = 'error'
-			response['error'] = e
+			response['error'] = str(e)
 			return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -8542,7 +8542,7 @@ class QorumsDashboardView(APIView):
 					top_hires.append(temp_dict)
 			tcwh = sorted(top_hires, key=lambda d: d['count'], reverse=True)[0:3]
 			# response['top-clients-with-hires'] = sorted(top_hires, key=lambda d: d['count'], reverse=True)[0:3]
-		elif request.user.profile.is_ae:
+		elif "is_ae" in request.user.profile.roles:
 			clients = json.loads(request.user.profile.client)
 			active_clients = Client.objects.filter(id__in=clients, disabled=False).count()
 			total_candidates = Candidate.objects.all().count()
@@ -8715,7 +8715,7 @@ class QorumsDashboardView(APIView):
 		response['total-candidates']['count'] = total_candidates
 		response['total-candidates']['chart-data'] = monthly_candidates
 		response['total-candidates']['class'] = 'total-candidates'	
-		if request.user.profile.is_ca:
+		if "is_ca" in request.user.profile.roles:
 			try:
 				response.pop("active-clients", None)
 				response.pop("top-clients-with-open-position", None)
