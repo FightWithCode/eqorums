@@ -30,4 +30,14 @@ urlpatterns = [
         views.GetHTMsByClient.as_view(),
         name="get-all-htms"
     ),
+    path(
+        "delete-clients",
+        views.DeleteClients.as_view(),
+        name="delete-clients"
+    ),
+    path(
+        "suspend-clients",
+        views.SuspendClients.as_view(),
+        name="suspend-clients"
+    ),
 ]

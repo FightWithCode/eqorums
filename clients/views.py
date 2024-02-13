@@ -686,3 +686,35 @@ class GetHTMsByClient(APIView):
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 		
+
+class DeleteClients(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def post(self, request):
+		try:
+			response = {}
+			client_ids = request.data.get("clients")
+			Client.objects.filter(id__in=client_ids).delete()			
+			response["msg"] = "deleted"
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SuspendClients(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def post(self, request):
+		try:
+			response = {}
+			client_ids = request.data.get("clients")
+			objs = Client.objects.filter(id__in=client_ids)
+			for obj in objs:
+				obj.state = "inactive"
+				obj.save()
+			response["msg"] = "updated"
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+		
+
