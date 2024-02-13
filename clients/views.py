@@ -500,16 +500,9 @@ class GetPositionByClient(APIView):
 				try:
 					response = {}
 					candidates_obj = Candidate.objects.get(user=user.id)
-					# openposition_objs = OpenPosition.objects.filter(id__in=json.loads(candidates_obj.associated_op_ids))
-					# requested_objs = OpenPosition.objects.filter(id__in=candidates_obj.requested_op_ids)
 					openposition_objs = OpenPosition.objects.filter(id__in=CandidateAssociateData.objects.filter(candidate=candidates_obj, accepted=True).values_list('open_position__id', flat=True))
 					requested_objs = OpenPosition.objects.filter(id__in=CandidateAssociateData.objects.filter(candidate=candidates_obj, accepted=None).values_list('open_position__id', flat=True))
 
-					# openposition_data = OpenPositionSerializer(openposition_objs, many=True).data
-					# clients_list = []
-					# for obj in openposition_objs:
-					# 	if obj.client not in clients_list:
-					# 		clients_list.append(obj.client)
 					clients_objs = Client.objects.filter(id__in=json.loads(candidates_obj.associated_client_ids)).order_by('-updated_at')
 					clients_serializer = ClientSerializer(clients_objs, many=True)
 					clients_serializer_data = clients_serializer.data
@@ -593,7 +586,7 @@ class GetPositionByClient(APIView):
 					hiring_group_obj = None
 					members_list = []
 				j['deadline'] = False
-				j['withdrawed_members'] = json.loads(j['withdrawed_members'])
+				j['withdrawed_members'] = j['withdrawed_members']
 				now = datetime.today().date()
 				for member in members_list:
 					try:
@@ -622,7 +615,7 @@ class GetPositionByClient(APIView):
 				if hiring_group_obj and hiring_group_obj.hr_profile == request.user.profile:
 					total_interviews = len(members_list) * len(candidates_obj)
 					total_interviewsdone = CandidateMarks.objects.filter(op_id=op_id).count()
-				elif user.profile.is_he or "is_htm" in user.profile.roles:
+				elif "is_htm" in user.profile.roles:
 					total_interviews = len(candidates_obj)
 					total_interviewsdone = CandidateMarks.objects.filter(op_id=op_id, marks_given_by=user.profile.id).count()
 				else:
@@ -661,3 +654,25 @@ class GetPositionByClient(APIView):
 			response['error'] = str(e)
 			response['msg'] = "error"
 			return Response(response, status=status.HTTP_200_OK)
+
+
+class GetHTMsByClient(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def get(self, request, client_id):
+		try:
+			response = {}
+			htms = Profile.objects.filter(id=str(client_id))
+			
+			htm_data = []
+			for htm in htms:
+				temp_client = {}
+				temp_client["id"] = htm.id
+				temp_client["name"] = htm.user.get_full_name()
+				temp_client["profile_photo"] = htm.profile_photo
+				htm_data.append(temp_client)
+			response["htms"] = htm_data
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+		

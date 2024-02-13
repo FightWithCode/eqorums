@@ -246,3 +246,22 @@ class CandidateStatus(models.Model):
 
     def __str__(self):
         return str(self.candidate_id)
+
+
+class Offered(models.Model):
+    candidate_id = models.IntegerField()
+    op_id = models.IntegerField()
+    created = models.DateTimeField(auto_now_add=True)
+
+
+class HTMWeightage(models.Model):
+    op_id = models.IntegerField()
+    htm_id = models.IntegerField()
+    init_qualify_ques_1_weightage = models.IntegerField(default=0)
+    init_qualify_ques_2_weightage = models.IntegerField(default=0)
+    init_qualify_ques_3_weightage = models.IntegerField(default=0)
+    init_qualify_ques_4_weightage = models.IntegerField(default=0) 
+    init_qualify_ques_5_weightage = models.IntegerField(default=0)
+    init_qualify_ques_6_weightage = models.IntegerField(default=0)
+    init_qualify_ques_7_weightage = models.IntegerField(default=0)
+    init_qualify_ques_8_weightage = models.IntegerField(default=0)

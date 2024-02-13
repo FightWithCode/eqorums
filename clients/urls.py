@@ -25,4 +25,9 @@ urlpatterns = [
         views.GetPositionByClient.as_view(),
         name="get-client-positions"
     ),
+    path(
+        "get-all-htms/<int:client_id>",
+        views.GetHTMsByClient.as_view(),
+        name="get-all-htms"
+    ),
 ]

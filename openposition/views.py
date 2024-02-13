@@ -1,5 +1,6 @@
 # python imports
 import json
+from datetime import timedelta
 
 # django imports
 from django.conf import settings
@@ -11,27 +12,39 @@ from django.template import Context, Template
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import permissions
 
 # models import
 from openposition.models import (
 	PositionDoc,
     OpenPosition,
 	HTMsDeadline,
-	HiringGroup
+	HiringGroup,
+	Interview,
+	CandidateMarks,
+	CandidateAssociateData,
+	Hired,
+	Offered,
+	HTMWeightage,
+	CandidateStatus
 )
 from clients.models import (
 	Client
 )
 from dashboard.models import (
 	Profile,
-	EmailTemplate
+	EmailTemplate,
+	HTMAvailability
 )
+from candidates.models import Candidate
 
 # serializers imports
 from openposition.serializers import OpenPositionSerializer
+from candidates.serializers import CandidateSerializer
 
 # utils import
-from openposition.utils import get_skillsets_data
+from openposition.utils import get_htm_specific_data
+from openposition.utils import get_skillsets_data, get_htm_flag_data
 from dashboard import tasks
 
 # Open Position View Step 1
@@ -248,3 +261,524 @@ class OpenPositionView(APIView):
             return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetPositionSummary(APIView):
+
+	# permission_classes = (permissions.IsAuthenticated,)
+
+	def get(self, request, op_id):
+		response = {}
+		try:
+			open_position = OpenPosition.objects.get(id=op_id)
+			dates = {}
+			start = open_position.kickoff_start_date
+			htm_deadlines = []
+			hiring_group = None
+			try:
+				hiring_group = HiringGroup.objects.get(group_id=open_position.hiring_group)
+				members_list = list(hiring_group.members_list.all())
+				if hiring_group.hr_profile in members_list:
+					members_list.remove(hiring_group.hr_profile)
+			except Exception as e:
+				members_list = []
+			for deadline in HTMsDeadline.objects.filter(open_position=open_position):
+				temp_dict = {}
+				temp_dict["deadline"] = deadline.deadline.strftime("%Y-%m-%d")
+				temp_dict["htm"] = deadline.htm.id
+				temp_dict["htm_name"] = deadline.htm.user.get_full_name()
+				try:
+					temp_dict["color"] = [d["color"] for d in hiring_group.members_color if d['htm'] == deadline.htm.id][0]
+				except Exception as e:
+					temp_dict["color"] = None
+				temp_dict["profile_pic"] = deadline.htm.profile_photo				
+				htm_deadlines.append(temp_dict)
+			
+			if start and open_position.target_deadline:
+				while start <= open_position.target_deadline:
+					if start.weekday() in [5, 6]:
+						bg_color = "#b5b5b5"
+					else:
+						bg_color = "#5cba83"
+					if start == open_position.kickoff_start_date:
+						stage = "kickoff"
+					elif start == open_position.sourcing_deadline:
+						stage = "sourcing"
+					elif start == open_position.target_deadline:
+						stage = "target"
+					else:
+						stage = None
+					cur_date = start
+					interview = []
+					# given_interviews = CandidateMarks.objects.filter(op_id=op_id, feedback_date__year=cur_date.year, feedback_date__month=cur_date.month,feedback_date__day=cur_date.day)
+					given_interviews = Interview.objects.filter(op_id__id=op_id, interview_date_time__year=cur_date.year, interview_date_time__month=cur_date.month,interview_date_time__day=cur_date.day)
+					for inter in given_interviews:
+						temp_dict = {}
+						htms = []
+						for htm in inter.htm.all():
+							htms.append(htm.user.get_full_name())
+						temp_dict["htmName"] = ", ".join(htms)
+						# temp_dict["htmId"] = inter.marks_given_by
+						color = []
+						# if hiring_group:
+						# 	color = [d["color"] for d in hiring_group.members_color if d['htm'] == inter.marks_given_by]
+						# if color:
+						# 	temp_dict["htmColorCode"] = color[0]
+						# else:
+						# 	temp_dict["htmColorCode"] = None
+						temp_dict["candidateId"] = inter.candidate.candidate_id
+						temp_dict["time"] = inter.interview_date_time.strftime("%I:%M %p")
+						try:
+							candidate_obj = Candidate.objects.get(candidate_id=inter.candidate.candidate_id)
+							temp_dict["candidateProfilePic"] = candidate_obj.profile_photo
+							temp_dict["candidateName"] = "{} {}".format(candidate_obj.name, candidate_obj.last_name) 
+						except:
+							temp_dict["candidateName"] = None
+							temp_dict["candidateProfilePic"] = None
+						if "is_htm" in request.user.profile.roles and request.user.profile not in [hiring_group.hod_profile, hiring_group.hr_profile]:
+							if request.user.profile.id in inter.htm.all().values_list('id', flat=True):
+								interview.append(temp_dict)
+						else:
+							interview.append(temp_dict)
+					if interview:
+						bg_color = "#000000"
+					deadlines = []
+					for d in htm_deadlines:
+						if d['deadline'] == start.strftime("%Y-%m-%d"):
+							if "is_htm" in request.user.profile.roles and request.user.profile not in [hiring_group.hod_profile, hiring_group.hr_profile]:
+								if request.user.profile.id == d["htm"]:
+									temp_dict = {"htmId": d["htm"], "htmProfPic": d["profile_pic"], "htmColorCode": d["color"]}
+									deadlines.append(temp_dict)
+							else:
+								temp_dict = {"htmId": d["htm"], "htmProfPic": d["profile_pic"], "htmColorCode": d["color"]}
+								deadlines.append(temp_dict)
+					temp_dict = {
+						"background": bg_color,
+						"stage": stage,
+						"additional": {},
+						"deadlines": deadlines,
+						"interviews_list": interview,
+						"date": start.strftime("%m/%d/%Y")
+					}
+					dates[start.strftime("%m/%d")] = temp_dict
+					start = start + timedelta(days=1)
+			response["dates"] = dates
+			htms_detail = []
+			for j in members_list:
+				try:
+					profile = j
+					color = []
+					if hiring_group:
+						color = [d["color"] for d in hiring_group.members_color if d['htm'] == profile.id]
+					member_dict = {}
+					member_dict['id'] = profile.id
+					member_dict['job_title'] = profile.job_title
+					member_dict['name'] = profile.user.first_name + ' ' + profile.user.last_name
+					member_dict['profile_pic'] = profile.profile_photo
+					if profile==hiring_group.hod_profile:
+						member_dict['isHod'] = True
+						member_dict['role'] = "Hiring Manager"
+					else:
+						member_dict['isHod'] = False
+					if profile == hiring_group.hr_profile:
+						member_dict['isHr'] = True
+						member_dict['role'] = "Team Cordinator"
+					else:
+						member_dict['isHr'] = False
+					if color:
+						member_dict['color'] = color[0]
+					if member_dict.get('role') == None:
+						member_dict['role'] = "Hiring Team Memeber"
+					htms_detail.append(member_dict)
+				except Exception as e:
+					print(e)
+					pass
+			response["htm_deadlines"] = htm_deadlines
+			response["htms"] = htms_detail
+			if hiring_group:
+				response["team_name"] = hiring_group.name
+			else:
+				response["team_name"] = None
+			response["position_status"] = "open"
+			if open_position.drafted:
+				response["position_status"] = "draft"
+			if open_position.trashed:
+				response["position_status"] = "trashed"
+			if open_position.archieved:
+				response["position_status"] = "archieved"
+			if open_position.filled:
+				response["position_status"] = "completed"
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AllCandidateFeedback(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def get(self, request, op_id):
+		try:
+			open_position_obj = OpenPosition.objects.get(id=op_id)
+			candidates_obj = []
+			for cao in CandidateAssociateData.objects.filter(open_position=open_position_obj):
+				if cao.candidate not in candidates_obj:
+					candidates_obj.append(cao.candidate)
+			candidates_serializer = CandidateSerializer(candidates_obj, many=True)
+			data = candidates_serializer.data
+			try:
+				hiring_group_obj = HiringGroup.objects.get(group_id=open_position_obj.hiring_group)
+			except:
+				for i in data:
+					i['final_avg_marks'] = 0
+					i['total_hiring_members'] = 1
+					i['marks_given_by'] = 0
+					i['flag'] = 'Not Given'
+					i['op_id'] = op_id
+					i['client_id'] = open_position_obj.client.id
+				return Response(data, status=status.HTTP_200_OK)
+			logged_user = request.user
+			logged_user_profile = Profile.objects.get(user=logged_user)
+			for i in data:
+				# Additin Profile Picture
+				if 'profile_pic_url' in i['linkedin_data'] and i['linkedin_data']['profile_pic_url'] and i['linkedin_data']['profile_pic_url'] != "null":
+					i['profile_photo'] = i['linkedin_data']['profile_pic_url']
+				else:
+					i['profile_photo'] = i['profile_photo']
+				# Getting if hired or not
+				try:
+					hire_obj = Hired.objects.get(candidate_id=i['candidate_id'], op_id=op_id)
+					i['hired'] = True
+				except:
+					i['hired'] = False
+				# Getting Offered or not
+				try:
+					hire_obj = Offered.objects.get(candidate_id=i['candidate_id'], op_id=op_id)
+					i['offered'] = True
+				except:
+					i['offered'] = False
+				# Getting withdrawed and requested data
+				i['op_id'] = op_id
+				if i['op_id'] in json.loads(i['withdrawed_op_ids']):
+					i['withdrawed'] = True
+				else:
+					i['withdrawed'] = False
+				if i['op_id'] in i["requested_op_ids"]:
+					i["requested"] = True
+				else:
+					i["requested"] = False
+				i['client_id'] = open_position_obj.client
+				
+				if "is_htm" in logged_user_profile.roles and hiring_group_obj.hod_profile != request.user.profile and hiring_group_obj.hr_profile != request.user.profile:
+					# Sending data as a HTM perspective
+					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
+					given_by = logged_user_profile.id
+					# Get weighage of the HTM if not found then assign 10 by default - Not being used
+					try:
+						htm_weightage_obj = HTMWeightage.objects.filter(op_id=op_id, htm_id=given_by)
+						htm_weightage_1 = htm_weightage_obj.init_qualify_ques_1_weightage
+						htm_weightage_2 = htm_weightage_obj.init_qualify_ques_2_weightage
+						htm_weightage_3 = htm_weightage_obj.init_qualify_ques_3_weightage
+						htm_weightage_4 = htm_weightage_obj.init_qualify_ques_4_weightage
+						htm_weightage_5 = htm_weightage_obj.init_qualify_ques_5_weightage
+						htm_weightage_6 = htm_weightage_obj.init_qualify_ques_6_weightage
+						htm_weightage_7 = htm_weightage_obj.init_qualify_ques_7_weightage
+						htm_weightage_8 = htm_weightage_obj.init_qualify_ques_8_weightage
+					except:
+						htm_weightage_1 = 10
+						htm_weightage_2 = 10
+						htm_weightage_3 = 10
+						htm_weightage_4 = 10
+						htm_weightage_5 = 10
+						htm_weightage_6 = 10
+						htm_weightage_7 = 10
+						htm_weightage_8 = 10
+					if candidate_marks_obj:
+						avg_marks = 0
+						count = 0
+						# Algorith to calculate marks based on HTM Weightage and Skills Weightage
+						if candidate_marks_obj[0].criteria_1_marks not in [None]: 
+							count = count + 1
+							avg_marks = avg_marks + candidate_marks_obj[0].criteria_1_marks * open_position_obj.init_qualify_ques_weightage_1
+						if candidate_marks_obj[0].criteria_2_marks not in [None]:
+							count = count + 1
+							avg_marks = avg_marks + candidate_marks_obj[0].criteria_2_marks* open_position_obj.init_qualify_ques_weightage_2
+						if candidate_marks_obj[0].criteria_3_marks not in [None]:
+							count = count + 1
+							avg_marks = avg_marks + candidate_marks_obj[0].criteria_3_marks* open_position_obj.init_qualify_ques_weightage_3
+						if candidate_marks_obj[0].criteria_4_marks not in [None]:
+							count = count + 1
+							avg_marks = avg_marks + candidate_marks_obj[0].criteria_4_marks* open_position_obj.init_qualify_ques_weightage_4
+						if candidate_marks_obj[0].criteria_5_marks not in [None]:
+							count = count + 1
+							avg_marks = avg_marks + candidate_marks_obj[0].criteria_5_marks * open_position_obj.init_qualify_ques_weightage_5
+						if candidate_marks_obj[0].criteria_6_marks not in [None]:
+							count = count + 1
+							avg_marks = avg_marks + candidate_marks_obj[0].criteria_6_marks * open_position_obj.init_qualify_ques_weightage_6
+						if candidate_marks_obj[0].criteria_7_marks not in [ None]:
+							count = count + 1
+							avg_marks = avg_marks + candidate_marks_obj[0].criteria_7_marks * open_position_obj.init_qualify_ques_weightage_7
+						if candidate_marks_obj[0].criteria_8_marks not in [None]:
+							count = count + 1
+							avg_marks = avg_marks + candidate_marks_obj[0].criteria_8_marks * open_position_obj.init_qualify_ques_weightage_8
+						i['avg_marks'] = round(avg_marks / count, 1)
+						i['total_hiring_members'] = hiring_group_obj.members_list.all().count() - 1
+						all_marks_candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id)
+						i['final_avg_marks'] = i['avg_marks']  # (all_marks_candidate_marks_obj.aggregate(Avg('criteria_1_marks'))['criteria_1_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_2_marks'))['criteria_2_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_3_marks'))['criteria_3_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_4_marks'))['criteria_4_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_5_marks'))['criteria_5_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_6_marks'))['criteria_6_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_7_marks'))['criteria_7_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_8_marks'))['criteria_8_marks__avg']) / 8
+						i['marks_given_by'] = all_marks_candidate_marks_obj.count()
+						if candidate_marks_obj[0].thumbs_up:
+							i['he_flag'] = 'Thumbs Up'
+							i['flag'] = 'Thumbs Up'
+						if candidate_marks_obj[0].thumbs_down:
+							i['he_flag'] = 'Thumbs Down'
+							i['flag'] = 'Thumbs Down'
+						if candidate_marks_obj[0].hold:
+							i['he_flag'] = 'Hold'
+							i['flag'] = 'Hold'
+						if candidate_marks_obj[0].golden_gloves:
+							i['he_flag'] = 'Golden Glove'
+							i['flag'] = 'Golden Glove'
+						i['flag_by_hiring_manager'] = []
+						temp_dict = {}
+						temp_dict['id'] = int(logged_user_profile.id)
+						candidate_marks_obj = candidate_marks_obj[0]
+						if candidate_marks_obj.thumbs_up:
+							temp_dict['flag'] = 'Thumbs Up'
+						if candidate_marks_obj.thumbs_down:
+							temp_dict['flag'] = 'Thumbs Down'
+						if candidate_marks_obj.hold:
+							temp_dict['flag'] = 'Hold'
+						if candidate_marks_obj.golden_gloves:
+							temp_dict['flag'] = 'Golden Glove'
+						# get other htm specific data
+						try:
+							interview_obj = Interview.objects.filter(op_id__id=op_id, htm__in=[logged_user_profile], candidate__candidate_id=i['candidate_id'])[0]
+							# call the function and pass interview_obj and logged_user_profile
+							extra_data = get_htm_specific_data(interview_obj, logged_user_profile)
+							temp_dict.update(extra_data)
+						except:
+							pass
+						temp_dict["marks"] = i['final_avg_marks']
+						i['flag_by_hiring_manager'].append(temp_dict)
+					else:
+						i['marks'] = {}
+						i['final_avg_marks'] = 0
+						i['total_hiring_members'] = hiring_group_obj.members_list.all().count() - 1
+						i['marks_given_by'] = 0
+						i['flag'] = 'Not Given'
+						i['flag_by_hiring_manager'] = []
+						temp_dict = {}
+						temp_dict['id'] = int(logged_user_profile.id)
+						try:
+							interview_obj = Interview.objects.filter(op_id__id=op_id, htm__in=[logged_user_profile], candidate__candidate_id=i['candidate_id'])[0]
+							extra_data = get_htm_specific_data(interview_obj, logged_user_profile)
+							temp_dict.update(extra_data)
+						except:
+							pass
+						temp_dict["marks"] = i['final_avg_marks']
+						i['flag_by_hiring_manager'].append(temp_dict)
+				else:
+					# Sending data as HM, HR, SM, CA or SA
+					# Check Candidate Marks Code from here
+					marks_dict = {}
+					marks_dict['init_qualify_ques_1'] = 0
+					marks_dict['init_qualify_ques_2'] = 0
+					marks_dict['init_qualify_ques_3'] = 0
+					marks_dict['init_qualify_ques_4'] = 0
+					marks_dict['init_qualify_ques_5'] = 0
+					marks_dict['init_qualify_ques_6'] = 0
+					marks_dict['init_qualify_ques_7'] = 0
+					marks_dict['init_qualify_ques_8'] = 0
+					# Get all scheduled interviews for the candidate
+					candidate_schedule_list = []
+					for interview in Interview.objects.filter(candidate__candidate_id=i["candidate_id"], op_id__id=op_id).filter(disabled=False):
+						try:
+							temp_dict = {}
+							interviewers_names = interview.htm.all().values_list("user__first_name", flat=True)
+							temp_dict['interviewer_name'] = ", ".join(interviewers_names)
+							temp_dict['time'] = interview.interview_date_time.strftime("%m/%d/%Y, %H:%M:%S")
+							candidate_schedule_list.append(temp_dict)
+						except:
+							continue
+					i['candidate_schedule'] = candidate_schedule_list
+					HM_vote = {}
+					members_list = list(hiring_group_obj.members_list.all().values_list("id", flat=True))
+					if hiring_group_obj.hod_profile:
+						members_list.append(hiring_group_obj.hod_profile.id)
+					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by__in=members_list)
+					candidate_status_HM = CandidateStatus.objects.filter(candidate_id=i['candidate_id'], op_id=op_id)
+					if candidate_status_HM:
+						HM_vote["shortlist_status"] = candidate_status_HM[0].shortlist_status
+						HM_vote["make_offer_status"] = candidate_status_HM[0].make_offer_status
+						HM_vote["finall_selection_status"] = candidate_status_HM[0].finall_selection_status
+						i["vote_by_HM"]=HM_vote
+					htm_weightage_1_total = 0
+					htm_weightage_2_total = 0
+					htm_weightage_3_total = 0
+					htm_weightage_4_total = 0
+					htm_weightage_5_total = 0
+					htm_weightage_6_total = 0
+					htm_weightage_7_total = 0
+					htm_weightage_8_total = 0
+					for c_obj in candidate_marks_obj:
+						given_by = c_obj.marks_given_by
+						try:
+							htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
+							htm_weightage_1_total = htm_weightage_1_total + htm_weightage_obj.init_qualify_ques_1_weightage
+							htm_weightage_2_total = htm_weightage_2_total + htm_weightage_obj.init_qualify_ques_2_weightage
+							htm_weightage_3_total = htm_weightage_3_total + htm_weightage_obj.init_qualify_ques_3_weightage
+							htm_weightage_4_total = htm_weightage_4_total + htm_weightage_obj.init_qualify_ques_4_weightage
+							htm_weightage_5_total = htm_weightage_5_total + htm_weightage_obj.init_qualify_ques_5_weightage
+							htm_weightage_6_total = htm_weightage_6_total + htm_weightage_obj.init_qualify_ques_6_weightage
+							htm_weightage_7_total = htm_weightage_7_total + htm_weightage_obj.init_qualify_ques_7_weightage
+							htm_weightage_8_total = htm_weightage_8_total + htm_weightage_obj.init_qualify_ques_8_weightage
+						except Exception as e:
+							htm_weightage_1_total = htm_weightage_1_total + 10
+							htm_weightage_2_total = htm_weightage_2_total + 10
+							htm_weightage_3_total = htm_weightage_3_total + 10
+							htm_weightage_4_total = htm_weightage_4_total + 10
+							htm_weightage_5_total = htm_weightage_5_total + 10
+							htm_weightage_6_total = htm_weightage_6_total + 10
+							htm_weightage_7_total = htm_weightage_7_total + 10
+							htm_weightage_8_total = htm_weightage_8_total + 10
+					if candidate_marks_obj:
+						for c_obj in candidate_marks_obj:
+							given_by = c_obj.marks_given_by
+							try:
+								htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
+								htm_weightage_1 = htm_weightage_obj.init_qualify_ques_1_weightage
+								htm_weightage_2 = htm_weightage_obj.init_qualify_ques_2_weightage
+								htm_weightage_3 = htm_weightage_obj.init_qualify_ques_3_weightage
+								htm_weightage_4 = htm_weightage_obj.init_qualify_ques_4_weightage
+								htm_weightage_5 = htm_weightage_obj.init_qualify_ques_5_weightage
+								htm_weightage_6 = htm_weightage_obj.init_qualify_ques_6_weightage
+								htm_weightage_7 = htm_weightage_obj.init_qualify_ques_7_weightage
+								htm_weightage_8 = htm_weightage_obj.init_qualify_ques_8_weightage
+							except Exception as e:
+								print(e)
+								i['error-in-htm-wightage'] = str(e)
+								htm_weightage_1 = 10
+								htm_weightage_2 = 10
+								htm_weightage_3 = 10
+								htm_weightage_4 = 10
+								htm_weightage_5 = 10
+								htm_weightage_6 = 10
+								htm_weightage_7 = 10
+								htm_weightage_8 = 10
+							marks_dict['init_qualify_ques_1'] = marks_dict['init_qualify_ques_1'] + c_obj.criteria_1_marks * htm_weightage_1
+							marks_dict['init_qualify_ques_2'] = marks_dict['init_qualify_ques_2'] + c_obj.criteria_2_marks * htm_weightage_2
+							marks_dict['init_qualify_ques_3'] = marks_dict['init_qualify_ques_3'] + c_obj.criteria_3_marks * htm_weightage_3
+							marks_dict['init_qualify_ques_4'] = marks_dict['init_qualify_ques_4'] + c_obj.criteria_4_marks * htm_weightage_4
+							marks_dict['init_qualify_ques_5'] = marks_dict['init_qualify_ques_5'] + c_obj.criteria_5_marks * htm_weightage_5
+							marks_dict['init_qualify_ques_6'] = marks_dict['init_qualify_ques_6'] + c_obj.criteria_6_marks * htm_weightage_6
+							marks_dict['init_qualify_ques_7'] = marks_dict['init_qualify_ques_7'] + c_obj.criteria_7_marks * htm_weightage_7
+							marks_dict['init_qualify_ques_8'] = marks_dict['init_qualify_ques_8'] + c_obj.criteria_8_marks * htm_weightage_8
+						marks_dict['init_qualify_ques_1'] = round(marks_dict['init_qualify_ques_1'] / htm_weightage_1_total, 1)
+						marks_dict['init_qualify_ques_2'] = round(marks_dict['init_qualify_ques_2'] / htm_weightage_2_total, 1)
+						marks_dict['init_qualify_ques_3'] = round(marks_dict['init_qualify_ques_3'] / htm_weightage_3_total, 1)
+						marks_dict['init_qualify_ques_4'] = round(marks_dict['init_qualify_ques_4'] / htm_weightage_4_total, 1)
+						marks_dict['init_qualify_ques_5'] = round(marks_dict['init_qualify_ques_5'] / htm_weightage_5_total, 1)
+						marks_dict['init_qualify_ques_6'] = round(marks_dict['init_qualify_ques_6'] / htm_weightage_6_total, 1)
+						marks_dict['init_qualify_ques_7'] = round(marks_dict['init_qualify_ques_7'] / htm_weightage_7_total, 1)
+						marks_dict['init_qualify_ques_8'] = round(marks_dict['init_qualify_ques_8'] / htm_weightage_8_total, 1)
+						i['marks'] = marks_dict
+						count = 0
+						avg_marks = 0
+						if marks_dict['init_qualify_ques_1'] not in [0, 0.0]:
+							count = count + open_position_obj.init_qualify_ques_weightage_1
+							avg_marks = avg_marks + marks_dict['init_qualify_ques_1'] * open_position_obj.init_qualify_ques_weightage_1
+						if marks_dict['init_qualify_ques_2'] not in [0, 0.0]:
+							count = count + open_position_obj.init_qualify_ques_weightage_2
+							avg_marks = avg_marks + marks_dict['init_qualify_ques_2'] * open_position_obj.init_qualify_ques_weightage_2
+						if marks_dict['init_qualify_ques_3'] not in [0, 0.0]:
+							count = count + open_position_obj.init_qualify_ques_weightage_3
+							avg_marks = avg_marks + marks_dict['init_qualify_ques_3'] * open_position_obj.init_qualify_ques_weightage_3
+						if marks_dict['init_qualify_ques_4'] not in [0, 0.0]:
+							count = count + open_position_obj.init_qualify_ques_weightage_4
+							avg_marks = avg_marks + marks_dict['init_qualify_ques_4'] * open_position_obj.init_qualify_ques_weightage_4
+						if marks_dict['init_qualify_ques_5'] not in [0, 0.0]:
+							count = count + open_position_obj.init_qualify_ques_weightage_5
+							avg_marks = avg_marks + marks_dict['init_qualify_ques_5'] * open_position_obj.init_qualify_ques_weightage_5
+						if marks_dict['init_qualify_ques_6'] not in [0, 0.0]:
+							count = count + open_position_obj.init_qualify_ques_weightage_6
+							avg_marks = avg_marks + marks_dict['init_qualify_ques_6'] * open_position_obj.init_qualify_ques_weightage_6
+						if marks_dict['init_qualify_ques_7'] not in [0, 0.0]:
+							count = count + open_position_obj.init_qualify_ques_weightage_7
+							avg_marks = avg_marks + marks_dict['init_qualify_ques_7'] * open_position_obj.init_qualify_ques_weightage_7
+						if marks_dict['init_qualify_ques_8'] not in [0, 0.0]:
+							count = count + open_position_obj.init_qualify_ques_weightage_8
+							avg_marks = avg_marks + marks_dict['init_qualify_ques_8'] * open_position_obj.init_qualify_ques_weightage_8
+						i['total_hiring_members'] = hiring_group_obj.members_list.all().count() - 1
+						i['marks_given_by'] = candidate_marks_obj.count()
+						thumbs_up = 0
+						thumbs_down = 0
+						hold = 0
+						print(count, avg_marks)
+						if count:
+							i['final_avg_marks'] = round(avg_marks / count, 1)
+						else:
+							i['final_avg_marks'] = 0.0
+						i['he_flag'] = None
+						i['flag_by_hiring_manager'] = []
+						hm_members_list = list(hiring_group_obj.members_list.all().values_list("id", flat=True))
+						try:
+							withdrawed_members = json.loads(open_position_obj.withdrawed_members)
+						except Exception as e:
+							withdrawed_members = []
+						hm_members_list = hm_members_list + withdrawed_members
+						i['like_count'] = 0
+						i['hold_count'] = 0
+						i['pass_count'] = 0
+						i['golden_glove_count'] = 0
+						if hiring_group_obj.hod_profile:
+							flag_data = get_htm_flag_data(hiring_group_obj.hod_profile, op_id, i["candidate_id"])
+							i['flag_by_hiring_manager'].append(flag_data)
+						else:
+							i['flag_by_hiring_manager'].append({})
+
+						hm_list = list(hiring_group_obj.members_list.all())
+						if hiring_group_obj.hr_profile in hm_list:
+							hm_list.remove(hiring_group_obj.hr_profile)
+						if hiring_group_obj.hod_profile in hm_list:
+							hm_list.remove(hiring_group_obj.hod_profile)
+						for hm in hm_list:
+							flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
+							i['flag_by_hiring_manager'].append(flag_data)
+						i['interviews_done'] = candidate_marks_obj.count()
+					else:
+						i['flag_by_hiring_manager'] = []
+						hm_members_list = list(hiring_group_obj.members_list.all().values_list("id", flat=True))
+						try:
+							withdrawed_members = json.loads(open_position_obj.withdrawed_members)
+						except Exception as e:
+							print(e)
+							withdrawed_members = []
+						hm_members_list = hm_members_list + withdrawed_members
+						i['marks'] = {}
+						i['final_avg_marks'] = 0
+						i['total_hiring_members'] = len(json.loads(hiring_group_obj.members)) - 1
+						i['marks_given_by'] = 0
+						i['flag'] = 'Not Given'
+						i['like_count'] = 0
+						i['hold_count'] = 0
+						i['pass_count'] = 0
+						i['golden_glove_count'] = 0
+						hiring_manager_hod = hiring_group_obj.hod_profile
+						if hiring_group_obj.hod_profile:
+							flag_data = get_htm_flag_data(hiring_group_obj.hod_profile, op_id, i["candidate_id"])
+							i['flag_by_hiring_manager'].append(flag_data)
+						else:
+							i['flag_by_hiring_manager'].append({})
+						hm_list = list(hiring_group_obj.members_list.all())
+						if hiring_group_obj.hr_profile in hm_list:
+							hm_list.remove(hiring_group_obj.hr_profile)
+						if hiring_group_obj.hod_profile in hm_list:
+							hm_list.remove(hiring_group_obj.hod_profile)
+						for hm in hm_list:
+							flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
+							i['flag_by_hiring_manager'].append(flag_data)
+						continue
+			data = sorted(data, key=lambda i: i['final_avg_marks'])
+			data.reverse()
+			return Response(data, status=status.HTTP_200_OK)
+		except Exception as e:
+			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
