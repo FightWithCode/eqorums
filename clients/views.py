@@ -462,10 +462,6 @@ class GetAllClientsData(APIView):
 				except:
 					return Response({}, status=status.HTTP_200_OK)
 			client_data = []
-			status = request.GET.get("status")
-			
-			if status:
-				clients_objs = clients_objs.filter(status=status)
 			for client in clients_objs:
 				temp_client = {}
 				temp_client["id"] = client.id
@@ -488,6 +484,7 @@ class GetAllClientsData(APIView):
 				temp_client["last_updated"] = client.updated_at.strftime("%m-%d-%Y")
 				temp_client["payment_due"] = client.updated_at.strftime("%m-%d-%Y")
 				temp_client["phone_no"] = client.company_contact_phone
+				temp_client["status"] = client.status
 				client_data.append(temp_client)
 			response["clients"] = client_data
 			response["active"] = 0
