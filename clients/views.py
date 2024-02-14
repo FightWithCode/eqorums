@@ -306,7 +306,7 @@ class SingleClientDataView(APIView):
 			client_obj.hr_contact_email = request.data.get('hr_contact_email', client_obj.hr_contact_email)
 			client_obj.special_req = request.data.get('special_req', client_obj.special_req)
 			# check if new ae is assigned.
-			if request.data.get('ae_assigned') == None or client_obj.ae_assigned == request.data.get('ae_assigned'):
+			if request.data.get('ae_assigned') in [None, "null"] or client_obj.ae_assigned == request.data.get('ae_assigned'):
 				pass
 			else:
 				try:
