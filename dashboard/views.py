@@ -495,7 +495,7 @@ class HiringMemberView(APIView):
 		try:
 			try:
 				client_id = int(request.query_params.get('client_id'))
-				hiring_member_objs = Profile.objects.filter(is_he=True, client=client_id)
+				hiring_member_objs = Profile.objects.filter(roles__contains="is_htm", client=client_id)
 			except:
 				hiring_member_objs = Profile.objects.filter(is_he=True)
 			print(hiring_member_objs)
@@ -1083,7 +1083,7 @@ class GetSingleOpenPosition(APIView):
 			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
 				candidates_objs.append(cao.candidate.candidate_id)
 			data['total_candidates'] = len(candidates_objs)
-			if request.user.profile.is_he or "is_htm" in request.user.profile.roles:
+			if "is_htm" in request.user.profile.roles:
 				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id, marks_given_by=request.user.profile.id)
 				data['interviews_to_complete'] = len(candidates_objs) - marks_given_to.count()
 				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
@@ -1355,7 +1355,7 @@ class HiringGroupView(APIView):
 					hiring_group_objs = HiringGroup.objects.filter(client_id=client_id, disabled=False)
 				except:
 					pass
-			elif user.profile.is_he or "is_htm" in user.profile.roles:
+			elif "is_htm" in user.profile.roles:
 				hiring_group_objs = HiringGroup.objects.filter(client_id=int(user.profile.client))
 				try:
 					# data = []
@@ -1443,7 +1443,7 @@ class SelectHiringGroup(APIView):
 					hiring_group_objs = HiringGroup.objects.filter(client_id=client_id, disabled=False)
 				except:
 					pass
-			elif user.profile.is_he or "is_htm" in user.profile.roles:
+			elif "is_htm" in user.profile.roles:
 				hiring_group_objs = HiringGroup.objects.filter(client_id=int(user.profile.client), hod=user.profile.id)
 			elif user.profile.is_ch:
 				hiring_group_objs = HiringGroup.objects.filter(client_id=int(user.profile.client))
@@ -2765,7 +2765,7 @@ class SingleCandidateDataView(APIView):
 class HiringManagerByClient(APIView):
 	def get(self, request, id):
 		try:
-			hiring_manager_objs = Profile.objects.filter(client=id, is_he=True)
+			hiring_manager_objs = Profile.objects.filter(client=id, roles__contains="is_htm")
 			members_list = []
 			if hiring_manager_objs:
 				for i in hiring_manager_objs:
@@ -3121,7 +3121,7 @@ class CandidateMarksView(APIView):
 			logged_user = request.user
 			logged_user_profile = Profile.objects.get(user=logged_user)
 			open_position_obj = OpenPosition.objects.get(id=op_id)
-			if logged_user_profile.is_he or "is_htm" in logged_user_profile.roles or "is_he" in logged_user_profile.roles:
+			if "is_htm" in logged_user_profile.roles:
 				given_by = logged_user_profile.id
 				try:
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=int(request.query_params.get('candidate_id')), op_id=op_id, marks_given_by=logged_user_profile.id)[0]
@@ -3519,7 +3519,7 @@ class CandidateFeedback(APIView):
 				else:
 					i["requested"] = False
 				i['client_id'] = open_position_obj.client
-				if logged_user_profile.is_he and hiring_group_obj.hod_profile != request.user.profile and hiring_group_obj.hr_profile != request.user.profile:
+				if "is_htm" in logged_user_profile.roles and hiring_group_obj.hod_profile != request.user.profile and hiring_group_obj.hr_profile != request.user.profile:
 					marks_dict = {}
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
 					given_by = logged_user_profile.id
@@ -4098,7 +4098,7 @@ class AllCandidateFeedback(APIView):
 					i["requested"] = False
 				i['client_id'] = open_position_obj.client
 				
-				if logged_user_profile.is_he and hiring_group_obj.hod_profile != request.user.profile and hiring_group_obj.hr_profile != request.user.profile:
+				if "is_htm" in logged_user_profile.roles and hiring_group_obj.hod_profile != request.user.profile and hiring_group_obj.hr_profile != request.user.profile:
 					# Sending data as a HTM perspective
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
 					given_by = logged_user_profile.id
@@ -5615,10 +5615,10 @@ class AllCandidateDataView(APIView):
 			data = {}
 			for i in string.ascii_uppercase:
 				data[i] = []
-			if request.user.profile.is_ca or request.user.profile.is_he or request.user.profile.is_sm:
-				queryset = Candidate.objects.filter(Q(created_by_client=request.user.profile.client)|Q(created_by_client=0))
-			else:
+			if request.user.is_superuser or "is_ae" in request.user.profile.roles:
 				queryset = Candidate.objects.all()
+			else:
+				queryset = Candidate.objects.filter(Q(created_by_client=request.user.profile.client)|Q(created_by_client=0))				
 			for i in queryset.order_by('last_name'):
 				temp_dict = {}
 				temp_dict['candidate_id'] = i.candidate_id
@@ -7035,7 +7035,7 @@ class GetDashboardDataView(APIView):
 						clients_list.append(str(i.id))
 					if i.id not in clients_list_int:
 						clients_list_int.append(i.id)
-				hiring_managers = Profile.objects.filter(is_he=True, client__in=clients_list)
+				hiring_managers = Profile.objects.filter(roles__contains="is_htm", client__in=clients_list)
 				open_positions = OpenPosition.objects.filter(client__in=clients_list_int, disabled=False, drafted=False, trashed=False)
 				filled_positions = OpenPosition.objects.filter(client__in=clients_list_int, filled=True, drafted=False)
 				active_candidates = []
@@ -7046,7 +7046,7 @@ class GetDashboardDataView(APIView):
 				hiring_teams = HiringGroup.objects.filter(client_id__in=clients_list_int)
 			else:
 				active_clients = Client.objects.filter(disabled=False)
-				hiring_managers = Profile.objects.filter(is_he=True)
+				hiring_managers = Profile.objects.filter(roles__contains="is_htm")
 				open_positions = OpenPosition.objects.filter(disabled=False, drafted=False, trashed=False)
 				filled_positions = OpenPosition.objects.filter(filled=True, drafted=False)
 				active_candidates = Candidate.objects.all()
@@ -9483,7 +9483,7 @@ class GetClientSummary(APIView):
 			client_obj = Client.objects.get(id=int(user.profile.client))
 			client_serializer = ClientSerializer(client_obj)
 			data['client_data'] = client_serializer.data
-			hiring_member_objs = Profile.objects.filter(is_he=True, client=int(user.profile.client))			
+			hiring_member_objs = Profile.objects.filter(roles__contains="is_htm", client=int(user.profile.client))			
 			members_list = []
 			for i in hiring_member_objs:
 				temp_dict = {}
@@ -9707,7 +9707,7 @@ class GetPositionToAssociate(APIView):
 				open_position = OpenPosition.objects.exclude(Q(id__in=json.loads(candidate_obj.associated_op_ids))| Q(id__in=json.loads(candidate_obj.withdrawed_op_ids))).filter(drafted=False, archieved=False, filled=False)
 			elif request.user.profile.is_ae:
 				open_position = OpenPosition.objects.filter(client__in=json.loads(request.user.profile.client)).exclude(Q(id__in=json.loads(candidate_obj.associated_op_ids))| Q(id__in=json.loads(candidate_obj.withdrawed_op_ids))).filter(drafted=False, archieved=False, filled=False)
-			elif request.user.profile.is_he or "is_htm" in request.user.profile.roles:
+			elif "is_htm" in request.user.profile.roles:
 				groups = HiringGroup.objects.filter(hod=request.user.profile.id).values_list('group_id', flat=True)
 				open_position = OpenPosition.objects.filter(client=int(request.user.profile.client)).exclude(Q(id__in=json.loads(candidate_obj.associated_op_ids))| Q(id__in=json.loads(candidate_obj.withdrawed_op_ids))).filter(drafted=False, archieved=False, filled=False)
 				open_position = open_position.filter(hiring_group__in=groups)
@@ -10427,7 +10427,7 @@ class GetPositionSummary(APIView):
 						except:
 							temp_dict["candidateName"] = None
 							temp_dict["candidateProfilePic"] = None
-						if (request.user.profile.is_he or "is_htm" in request.user.profile.roles) and request.user.profile not in [hiring_group.hod_profile, hiring_group.hr_profile]:
+						if ("is_htm" in request.user.profile.roles) and request.user.profile not in [hiring_group.hod_profile, hiring_group.hr_profile]:
 							if request.user.profile.id in inter.htm.all().values_list('id', flat=True):
 								interview.append(temp_dict)
 						else:
@@ -10437,7 +10437,7 @@ class GetPositionSummary(APIView):
 					deadlines = []
 					for d in htm_deadlines:
 						if d['deadline'] == start.strftime("%Y-%m-%d"):
-							if (request.user.profile.is_he or "is_htm" in request.user.profile.roles) and request.user.profile not in [hiring_group.hod_profile, hiring_group.hr_profile]:
+							if ("is_htm" in request.user.profile.roles) and request.user.profile not in [hiring_group.hod_profile, hiring_group.hr_profile]:
 								if request.user.profile.id == d["htm"]:
 									temp_dict = {"htmId": d["htm"], "htmProfPic": d["profile_pic"], "htmColorCode": d["color"]}
 									deadlines.append(temp_dict)
@@ -10692,7 +10692,7 @@ class GetArchivedOpenPosition(APIView):
 				candidates_objs.append(cao.candidate.candidate_id)
 				candidates_list.append(cao.candidate)
 			data['total_candidates'] = len(candidates_objs)
-			if request.user.profile.is_he or "is_htm" in request.user.profile.roles:
+			if "is_htm" in request.user.profile.roles:
 				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id, marks_given_by=request.user.profile.id)
 				data['interviews_to_complete'] = len(candidates_objs) - marks_given_to.count()
 				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
@@ -10725,7 +10725,7 @@ class GetArchivedOpenPosition(APIView):
 				else:
 					temp_can["profile_photo"] = can.profile_photo
 
-				if request.user.profile.is_he or "is_htm" in request.user.profile.roles:
+				if "is_htm" in request.user.profile.roles:
 					marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id, marks_given_by=request.user.profile.id)
 					temp_can['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
 					temp_can['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
@@ -13725,7 +13725,7 @@ class GetAllPositionByClient(APIView):
 			else:
 				i["team_exists"] = False
 			ordered_ops = []
-			if user.profile.is_he:
+			if "is_htm" in user.profile.roles:
 				hg_list = []
 				for hg in HiringGroup.objects.all():
 					if user.profile in hg.members_list.all() or hg.hr_profile == user.profile:

@@ -402,7 +402,7 @@ class SingleClientDataView(APIView):
 			hiring_group_objs = HiringGroup.objects.filter(client_id=client_id)
 			for i in hiring_group_objs:
 				i.delete()
-			hiring_member_objs = Profile.objects.filter(client=client_obj.id, is_he=True)
+			hiring_member_objs = Profile.objects.filter(client=client_obj.id, roles__contains="is_htm")
 			for i in hiring_member_objs:
 				try:
 					user_obj = User.objects.get(username=i.user.username)
