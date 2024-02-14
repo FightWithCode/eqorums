@@ -8985,7 +8985,8 @@ class UserProfileAPI(APIView):
 					print(e)
 					response['profile_photo'] = profile_obj.profile_photo
 			else:
-				response['profile_photo'] = profile_obj.profile_photo.url
+				# response['profile_photo'] = profile_obj.profile_photo.url
+				response['profile_photo'] = None
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			response['msg'] = 'error'
