@@ -200,7 +200,7 @@ def user_logged_in_(request, user, **kwargs):
 
 
 def update_assigned_clients():
-	for i in Profile.objects.filter(is_ae=True):
+	for i in Profile.objects.filter(roles__contains="is_ae"):
 		client_list = []
 		for j in Client.objects.filter(ae_assigned=i.user.username, disabled=False):
 			client_list.append(j.id)
@@ -1372,7 +1372,7 @@ class HiringGroupView(APIView):
 					hiring_group_objs = HiringGroup.objects.filter(client_id=client_id, disabled=False)
 				except:
 					pass
-			elif user.profile.is_ae:
+			elif "is_ae" in user.profile.roles:
 				hiring_group_objs = HiringGroup.objects.filter(client_id__in=json.loads(user.profile.client))
 				try:
 					# data = []
@@ -1452,7 +1452,7 @@ class SelectHiringGroup(APIView):
 					hiring_group_objs = HiringGroup.objects.filter(client_id=client_id, disabled=False)
 				except:
 					pass
-			elif user.profile.is_ae:
+			elif "is_ae" in user.profile.roles:
 				hiring_group_objs = HiringGroup.objects.filter(client_id__in=json.loads(user.profile.client))
 				try:
 					client_id = int(request.query_params.get('client_id'))
@@ -2202,7 +2202,7 @@ class ChangePasswordView(UpdateAPIView):
 				for admin in User.objects.filter(is_superuser=True):
 					tasks.send_app_notification.delay(admin.username, 'Password is changed for user {}'.format(serializer.data.get("username")))
 					tasks.push_notification.delay([admin.username], 'Qorums Notification', 'Password is changed for user {}'.format(serializer.data.get("username")))
-				for ae in Profile.objects.filter(is_ae=True):
+				for ae in Profile.objects.filter(roles__contains="is_ae"):
 					tasks.send_app_notification.delay(ae.user.username, 'Password is changed for user {}'.format(serializer.data.get("username")))
 					tasks.push_notification.delay([ae.user.username], 'Qorums Notification', 'Password is changed for user {}'.format(serializer.data.get("username")))
 				response['msg'] = 'changed'
@@ -4429,7 +4429,7 @@ class GetAccountManagerName(APIView):
 	def get(self, request):
 		try:
 			client_id = int(request.query_params.get('client_id'))
-			for i in Profile.objects.filter(is_ae=True):
+			for i in Profile.objects.filter(roles__contains="is_ae"):
 				client_list = json.loads(i.client)
 				if client_id in client_list:
 					try:
@@ -7026,7 +7026,7 @@ class GetDashboardDataView(APIView):
 		response = {}
 		try:
 			user = request.user
-			if user.profile.is_ae:
+			if "is_ae" in user.profile.roles:
 				active_clients = Client.objects.filter(id__in=json.loads(user.profile.client)).order_by('-updated_at')
 				clients_list = []
 				clients_list_int = []
@@ -9705,7 +9705,7 @@ class GetPositionToAssociate(APIView):
 		if candidate_obj:
 			if request.user.is_superuser:
 				open_position = OpenPosition.objects.exclude(Q(id__in=json.loads(candidate_obj.associated_op_ids))| Q(id__in=json.loads(candidate_obj.withdrawed_op_ids))).filter(drafted=False, archieved=False, filled=False)
-			elif request.user.profile.is_ae:
+			elif "is_ae" in request.user.profile.roles:
 				open_position = OpenPosition.objects.filter(client__in=json.loads(request.user.profile.client)).exclude(Q(id__in=json.loads(candidate_obj.associated_op_ids))| Q(id__in=json.loads(candidate_obj.withdrawed_op_ids))).filter(drafted=False, archieved=False, filled=False)
 			elif "is_htm" in request.user.profile.roles:
 				groups = HiringGroup.objects.filter(hod=request.user.profile.id).values_list('group_id', flat=True)
@@ -11680,13 +11680,13 @@ class GetAllUser(APIView):
 		try:
 			response = {}
 			if request.user.is_superuser:
-				profile_objs = Profile.objects.all().filter(user__is_superuser=False).filter(is_ae=False).exclude(roles=[]).exclude(client='[]')
-			elif request.user.profile.is_ae:
+				profile_objs = Profile.objects.all().filter(user__is_superuser=False).filter(roles__contains="is_ae").exclude(roles=[]).exclude(client='[]')
+			elif "is_ae" in request.user.profile.roles:
 				clients = json.loads(request.user.profile.client)
 				clients_list = [str(x) for x in clients] 
-				profile_objs = Profile.objects.all().filter(user__is_superuser=False).filter(is_ae=False).exclude(roles=[]).exclude(client='[]').filter(client__in=clients_list)
+				profile_objs = Profile.objects.all().filter(user__is_superuser=False).filter(roles__contains="is_ae").exclude(roles=[]).exclude(client='[]').filter(client__in=clients_list)
 			else:
-				profile_objs = Profile.objects.all().filter(user__is_superuser=False).filter(is_ae=False).exclude(roles=[]).exclude(client='[]').exclude(roles__contains="is_ca").filter(client=request.user.profile.client)
+				profile_objs = Profile.objects.all().filter(user__is_superuser=False).filter(roles__contains="is_ae").exclude(roles=[]).exclude(client='[]').exclude(roles__contains="is_ca").filter(client=request.user.profile.client)
 			# profile_serializer = CustomProfileSerializer(profile_objs, many=True)
 			query = request.query_params.get("search", None)
 			if query:
@@ -12470,7 +12470,7 @@ class BasicClientDetailView(APIView):
 	def get(self, request):
 		try:
 			response = {}
-			if request.user.is_superuser or request.user.profile.is_ae:
+			if request.user.is_superuser or "is_ae" in request.user.profile:
 				client_obj = Client.objects.get(id=int(request.query_params.get('client')))
 			else:
 				client_obj = Client.objects.get(id=int(request.user.profile.client))
@@ -12497,7 +12497,7 @@ class BasicClientDetailView(APIView):
 	def put(self, request):
 		try:
 			response = {}
-			if request.user.is_superuser or request.user.profile.is_ae:
+			if request.user.is_superuser or "is_ae" in request.user.profile.roles:
 				client_obj = Client.objects.get(id=int(request.query_params.get('client')))
 			else:
 				client_obj = Client.objects.get(id=int(request.user.profile.client))
@@ -13117,7 +13117,7 @@ class ListClients(APIView):
 		try:
 			response = {}
 			user = request.user
-			if user.profile.is_ae:
+			if "is_ae" in user.profile.roles:
 				clients_objs = Client.objects.filter(id__in=json.loads(user.profile.client)).order_by('-updated_at')
 			elif user.is_superuser:
 				clients_objs = Client.objects.filter(disabled=False).order_by('-updated_at')
@@ -13147,7 +13147,7 @@ class GetStripeKey(APIView):
 		try:
 			response = {}
 			user = request.user
-			if user.profile.is_ae or user.profile.is_ca or user.is_superuser:
+			if "is_ae" in user.profile.roles or "is_ca" in user.profile or user.is_superuser:
 				response['key'] = settings.STRIPE_SECRET_KEY
 				response['msg'] = 'fetched'
 				return Response(response, status=status.HTTP_200_OK)
@@ -13802,7 +13802,7 @@ class GetAllClientsList(APIView):
 		response = {}
 		try:
 			user = request.user
-			if user.profile.is_ae:
+			if "is_ae" in user.profile.roles:
 				clients_objs = Client.objects.filter(id__in=json.loads(user.profile.client)).order_by('-updated_at')
 			elif user.is_superuser:
 				clients_objs = Client.objects.filter(disabled=False).order_by('-updated_at')
