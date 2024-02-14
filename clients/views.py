@@ -254,7 +254,7 @@ class SingleClientDataView(APIView):
 				if package_obj.is_trial:
 					response["client"]["package_name"] = "Trial"
 					response["client"]["package"] = 0
-					response["client"]["trial_date"] = package_obj.trial_expired
+					response["client"]["trial_expired"] = package_obj.trial_expired
 				else:	
 					response["client"]["package_name"] = package_obj.package.name
 					response["client"]["package"] = package_obj.package.id
