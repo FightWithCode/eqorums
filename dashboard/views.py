@@ -590,6 +590,10 @@ class LoginView(KnoxLoginView):
 		data.data['last_name'] = user.last_name
 		user_profile = Profile.objects.get(user=user)
 		# Get first log data
+		if any((True for x in user.profile.roles if x in ["is_htm", "is_sm", "is_ca"])):
+			client_obj = Client.objects.get(id=int(user.profile.client))
+			if client_obj.status == "inactive":
+				return Response({"msg": "Your account is suspended. Please contact support@qorums.com"}, status=status.HTTP_400_BAD_REQUEST)
 		if "is_ca" in user.profile.roles:
 			client_obj = Client.objects.get(id=int(user.profile.client))
 			data.data['client_data'] = ClientSerializer(client_obj).data
@@ -12699,7 +12703,7 @@ class ClientPackageView(APIView):
 			if package_obj.is_trial:
 				data["package_id"] = 0
 				data["package"] = "Trial"
-				data["trial_expired"] = package_obj.trial_expired
+				data["trial_expired"] = package_obj.trial_expired.strformat()
 			else:
 				data["package_id"] = package_obj.package.id
 				data["package"] = package_obj.package.name

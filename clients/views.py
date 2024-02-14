@@ -711,7 +711,7 @@ class SuspendClients(APIView):
 			client_ids = request.data.get("clients")
 			objs = Client.objects.filter(id__in=client_ids)
 			for obj in objs:
-				obj.state = "inactive"
+				obj.status = "inactive"
 				obj.save()
 			response["msg"] = "updated"
 			return Response(response, status=status.HTTP_200_OK)
