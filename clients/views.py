@@ -717,5 +717,22 @@ class SuspendClients(APIView):
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-		
+
+
+class ActivateClients(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def post(self, request):
+		try:
+			response = {}
+			client_ids = request.data.get("clients")
+			objs = Client.objects.filter(id__in=client_ids)
+			for obj in objs:
+				obj.status = "active"
+				obj.save()
+			response["msg"] = "updated"
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 

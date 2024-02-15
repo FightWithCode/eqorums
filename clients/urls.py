@@ -40,4 +40,9 @@ urlpatterns = [
         views.SuspendClients.as_view(),
         name="suspend-clients"
     ),
+    path(
+        "activate-clients",
+        views.ActivateClients.as_view(),
+        name="activate-clients"
+    ),
 ]
