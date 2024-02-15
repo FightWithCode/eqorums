@@ -117,7 +117,7 @@ def get_openposition_data(user):
 		# open_positions = OpenPosition.objects.filter(drafted=False)
 		# openposition_serializer = OpenPositionSerializer(open_positions, many=True)
 		# open_position_data['drafted-position'] = openposition_serializer.data
-	elif user.profile.is_ae:
+	elif "is_ae" in user.profile.roles:
 		open_positions = OpenPosition.objects.filter(client__in=json.loads(user.profile.client), archieved=False, drafted=False, filled=False, trashed=False)
 		openposition_serializer = OpenPositionSerializer(open_positions, many=True)
 		open_position_data['open-position'] = openposition_serializer.data
@@ -236,7 +236,7 @@ def get_liked_candidates_data(user):
 			if current_month == 0:
 				current_month = 12
 				current_year = current_year - 1
-	elif user.profile.is_ae:
+	elif "is_ae" in user.profile.roles:
 		open_position_list = list(OpenPosition.objects.filter(client__in=json.loads(user.profile.client), drafted=False, archieved=False, filled=False, trashed=False).values_list('id', flat=True))
 		candidates_obj = []
 		# for i in Candidate.objects.all():
@@ -361,7 +361,7 @@ def get_passed_candidates_data(user):
 			if current_month == 0:
 				current_month = 12
 				current_year = current_year - 1
-	elif user.profile.is_ae:
+	elif "is_ae" in user.profile.roles:
 		open_position_list = list(OpenPosition.objects.filter(client__in=json.loads(user.profile.client), drafted=False, archieved=False, filled=False, trashed=False).values_list('id', flat=True))
 		candidates_obj = []
 		# for i in Candidate.objects.all():
@@ -463,7 +463,7 @@ def get_interview_data(user):
 	total_interviews_not_done = 0
 	if user.is_superuser:
 		open_position_list = list(OpenPosition.objects.all().filter(drafted=False, archieved=False, filled=False).values_list("id", flat=True))
-	elif user.profile.is_ae:
+	elif "is_ae" in user.profile.roles:
 		open_position_list = list(OpenPosition.objects.filter(client__in=json.loads(user.profile.client)).filter(drafted=False, archieved=False, filled=False, trashed=False).values_list("id", flat=True))
 	else:
 		client = Client.objects.get(id=int(user.profile.client))
