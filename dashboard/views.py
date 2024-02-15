@@ -8830,7 +8830,7 @@ class SeniorManagerView(APIView):
 			response['job_title'] = profile_obj.job_title
 			response["email"] = profile_obj.email
 			response["client_id"] = profile_obj.client
-			response['profile_photo']  = profile_obj.profile_photo
+			response['profile_photo']  = profile_obj.profile_photo.url if profile_obj.profile_photo else None
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
