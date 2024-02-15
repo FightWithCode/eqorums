@@ -486,8 +486,7 @@ class GetAllClientsData(APIView):
 				temp_client["payment_due"] = client.updated_at.strftime("%m-%d-%Y")
 				temp_client["phone_no"] = client.company_contact_phone
 				temp_client["status"] = client.status
-				temp_client["logo"] = None
-				# temp_client["logo"] = client.logo.url if client.logo else None
+				temp_client["logo"] = client.logo.url if client.logo else None
 				client_data.append(temp_client)
 			response["clients"] = client_data
 			response["active"] = 0
