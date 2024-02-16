@@ -30,11 +30,6 @@ urlpatterns = [
         name="all-account-managers",
     ),
     path(
-        "open-positions",
-        views.OpenPositionView.as_view(),
-        name="open-positions",
-    ),
-    path(
         "get-open-positions/<int:op_id>",
         views.GetSingleOpenPosition.as_view(),
         name="open-positions",
