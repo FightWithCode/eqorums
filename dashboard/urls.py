@@ -85,11 +85,6 @@ urlpatterns = [
         name="qualifying-questions-list",
     ),
     path(
-        "update-open-position-stage/<int:op_id>",
-        views.UpdateOpenPositionStageCompletionView.as_view(),
-        name="update-open-position-stage",
-    ),
-    path(
         "cadidate-data",
         views.CandidateDataView.as_view(),
         name="cadidate-data",
