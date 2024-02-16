@@ -10182,7 +10182,7 @@ class GetArchivedOpenPosition(APIView):
 				temp_dict["htm"] = deadline.htm.id
 				htm_deadlines.append(temp_dict)
 			data["htm_deadlines"] = htm_deadlines
-			data['withdrawed_members'] = json.loads(data['withdrawed_members'])
+			data['withdrawed_members'] = position_obj.withdrawed_members.all().values_list("id", flat=True)
 			if position_obj.kickoff_start_date:
 				data['kickoff_start_date'] = position_obj.kickoff_start_date.strftime("%m-%d-%Y")
 			if position_obj.target_deadline:
@@ -10190,23 +10190,12 @@ class GetArchivedOpenPosition(APIView):
 				data['stages'] = json.loads(data['stages'])
 				now = datetime.today().date()
 				candidates_obj = []
-				# for k in Candidate.objects.all():
-				# 	if op_id in json.loads(k.associated_op_ids):
-				# 		candidates_obj.append(k)
 				for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
 					candidates_obj.append(cao.candidate)
-				try:
-					hiring_group_obj = HiringGroup.objects.get(group_id=position_obj.hiring_group)
-				except Exception as e:
-					pass
-				try:
-					members_list = list(hiring_group_obj.members_list.all().values_list("id", flat=True))
-				except Exception as e:
-					print(e)
-					members_list = []
+				members_list = position_obj.htms.all()
 				for member in members_list:
 					try:
-						interview_taken = CandidateMarks.objects.filter(op_id=position_obj.id, marks_given_by=member).count()
+						interview_taken = CandidateMarks.objects.filter(op_id=position_obj.id, marks_given_by=member.id).count()
 						if interview_taken <= len(candidates_obj):
 							data['deadline'] = True
 					except:
@@ -10245,13 +10234,6 @@ class GetArchivedOpenPosition(APIView):
 				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
 			data['delayed'] = False
 			data['no_of_hired_positions'] = Hired.objects.filter(op_id=op_id).count()
-			# get hiring group
-			try:
-				hiring_group_obj = HiringGroup.objects.get(group_id=position_obj.hiring_group)
-				hiring_group_ser = GetHiringGroupSerializer(hiring_group_obj)
-				data["hiring_group"] = hiring_group_ser.data
-			except Exception as e:
-				data["hiring_group"] = {}
 			# get_candidate data
 			candidate_data = []
 			for can in candidates_list:

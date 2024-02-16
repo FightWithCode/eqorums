@@ -93,10 +93,10 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 	hiring_team = serializers.SerializerMethodField(read_only=True)
 	position_filled = serializers.SerializerMethodField(read_only=True)
 	status = serializers.SerializerMethodField(read_only=True)
-
 	class Meta:
 		model = OpenPosition
 		fields = '__all__'
+	
 	def get_hiring_manager(self, obj):
 		try:
 			hiring_group_obj = HiringGroup.objects.get(group_id=obj.hiring_group)
