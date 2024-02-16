@@ -10,7 +10,9 @@ from .models import (
 )
 from clients.models import Client
 from hiringgroup.models import HiringGroup
-from .serializers import OpenPositionSerializer, CandidateSerializer
+# serializers import
+from openposition.serializers import OpenPositionSerializer
+from .serializers import CandidateSerializer
 import json
 from django.db.models.functions import TruncMonth
 from django.db.models import Count, Q
