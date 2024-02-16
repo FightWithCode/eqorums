@@ -726,11 +726,6 @@ urlpatterns = [
         name="get-current-htm-data"
     ),
     path(
-        "basic-client-details",
-        views.BasicClientDetailView.as_view(),
-        name="basic-client-details"
-    ),
-    path(
         "extra-accounts/<int:package_id>",
         views.ExtraAccountsPriceView.as_view(),
         name="extra-accounts"

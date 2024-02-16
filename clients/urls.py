@@ -45,4 +45,9 @@ urlpatterns = [
         views.ActivateClients.as_view(),
         name="activate-clients"
     ),
+    path(
+        "basic-client-details",
+        views.BasicClientDetailView.as_view(),
+        name="basic-client-details"
+    ),
 ]

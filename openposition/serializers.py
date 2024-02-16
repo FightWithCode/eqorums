@@ -12,7 +12,8 @@ from openposition.models import (
 	CandidateMarks,
 	Hired,
 	HTMsDeadline,
-	Interview
+	Interview,
+	PositionDoc
 )
 from candidates.models import (
 	Candidate
@@ -28,10 +29,16 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 	has_pending_int = serializers.SerializerMethodField(read_only=True)
 	position_filled = serializers.SerializerMethodField(read_only=True)
 	status = serializers.SerializerMethodField(read_only=True)
+	decumentation = serializers.SerializerMethodField(read_only=True)
 
 	class Meta:
 		model = OpenPosition
 		fields = '__all__'
+	def get_decumentation(self, obj):
+		doc_urls = []
+		for i in PositionDoc.objects.filter(openposition=obj):
+			doc_urls.append(i.file.url)
+		return doc_urls
 	def get_position_filled(self, obj):
 		return Hired.objects.filter(op_id=obj.id).count()
 	def get_status(self, obj):

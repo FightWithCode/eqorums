@@ -58,6 +58,9 @@ from .utils import (
 	update_assigned_clients,
 	get_ca_data
 )
+from  demo.aws_utils import (
+	delete_image
+)
 
 # APIs
 class SignupClientDataView(APIView):
@@ -147,7 +150,7 @@ class SingleClientDataView(APIView):
 		data = request.data.copy()
 		if data.get('logo') == 'null':
 			data.pop('logo', None)
-		if request.data.get("key_contact_email")) not in ["null", "None", None] and Profile.objects.filter(email=request.data.get("key_contact_email")).exists() or Candidate.objects.filter(email=request.data.get("key_contact_email")).exists():
+		if request.data.get("key_contact_email") not in ["null", "None", None] and Profile.objects.filter(email=request.data.get("key_contact_email")).exists() or Candidate.objects.filter(email=request.data.get("key_contact_email")).exists():
 			return Response({'message': "Email already exists!"}, status=status.HTTP_400_BAD_REQUEST)			
 		try:
 			client_serializer = ClientSerializer(data=data)
@@ -277,12 +280,17 @@ class SingleClientDataView(APIView):
 			client_obj.company_contact_email = request.data.get('company_contact_email', client_obj.company_contact_email)
 			
 			if isinstance(request.data.get("logo"), str):
-				if request.data.get("logo") == "null":
+				if request.data.get("logo") in ["null", None]:
 					client_obj.logo = None
 				else:
 					pass
-			else:
-				client_obj.logo = request.data.get('logo')
+			try:
+				logo = request.FILES['logo']
+				splitted_path = logo.split('/')
+				delete_image("logo/" + splitted_path[-1])
+				client_obj.logo = logo
+			except Exception as e:
+				print(e)
 			key_profile_obj = client_obj.ca_profile
 			key_profile_obj.user.first_name = request.data.get('ca_first_name', key_profile_obj.user.first_name)
 			key_profile_obj.user.last_name = request.data.get('ca_last_name', key_profile_obj.user.last_name)
@@ -740,3 +748,64 @@ class ActivateClients(APIView):
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class BasicClientDetailView(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def get(self, request):
+		try:
+			response = {}
+			if request.user.is_superuser or "is_ae" in request.user.profile:
+				client_obj = Client.objects.get(id=int(request.query_params.get('client')))
+			else:
+				client_obj = Client.objects.get(id=int(request.user.profile.client))
+			response["company_name"] = client_obj.company_name
+			response["company_website"] = client_obj.company_website
+			response["company_linkedin"] = client_obj.company_linkedin
+			response["addr_line_1"] = client_obj.addr_line_1
+			response["addr_line_2"] = client_obj.addr_line_2
+			response["city"] = client_obj.city
+			response["state"] = client_obj.state
+			response["pincode"] = client_obj.pincode
+			response["logo"] = client_obj.logo.url if client_obj.logo else None
+			client_obj.save()
+			response['msg'] = 'fetched'
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response['msg'] = 'error'
+			response['error'] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+	
+	def put(self, request):
+		try:
+			response = {}
+			if request.user.is_superuser or "is_ae" in request.user.profile.roles:
+				client_obj = Client.objects.get(id=int(request.query_params.get('client')))
+			else:
+				client_obj = Client.objects.get(id=int(request.user.profile.client))
+			client_obj.company_name = request.data.get("company_name")
+			client_obj.company_website = request.data.get("company_website")
+			client_obj.company_linkedin = request.data.get("company_linkedin")
+			client_obj.addr_line_1 = request.data.get("addr_line_1")
+			client_obj.addr_line_2 = request.data.get("addr_line_2")
+			client_obj.city = request.data.get("city")
+			client_obj.state = request.data.get("state")
+			client_obj.pincode = request.data.get("pincode")
+			if isinstance(request.data.get("logo"), str):
+				if request.data.get("logo") in ["null", None]:
+					client_obj.logo = None
+				else:
+					pass
+			try:
+				logo = request.FILES['logo']
+				splitted_path = logo.split('/')
+				delete_image("logo/" + splitted_path[-1])
+				client_obj.logo = logo
+			except Exception as e:
+				print(e)
+			client_obj.save()
+			response['msg'] = 'updated'
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response['msg'] = 'error'
+			response['error'] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)

@@ -25,4 +25,9 @@ urlpatterns = [
         views.AllCandidateFeedback.as_view(),
         name="candidate-feedback",
     ),
+    path(
+        "get-open-positions/<int:op_id>",
+        views.GetSingleOpenPosition.as_view(),
+        name="get-open-positions",
+    ),
 ]

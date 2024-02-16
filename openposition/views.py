@@ -1,6 +1,6 @@
 # python imports
 import json
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 # django imports
 from django.conf import settings
@@ -784,5 +784,75 @@ class AllCandidateFeedback(APIView):
 			data = sorted(data, key=lambda i: i['final_avg_marks'])
 			data.reverse()
 			return Response(data, status=status.HTTP_200_OK)
+		except Exception as e:
+			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class GetSingleOpenPosition(APIView):
+	def get(self, request, op_id):
+		try:
+			position_obj = OpenPosition.objects.get(id=op_id)
+			openposition_serializer = OpenPositionSerializer(position_obj)
+			data = openposition_serializer.data
+			if position_obj.sourcing_deadline:
+				data['sourcing_deadline'] = position_obj.sourcing_deadline.strftime("%m-%d-%Y")
+			htm_deadlines = []
+			for deadline in HTMsDeadline.objects.filter(open_position=position_obj):
+				temp_dict = {}
+				temp_dict["deadline"] = deadline.deadline.strftime("%m-%d-%Y")
+				temp_dict["htm"] = deadline.htm.id
+				htm_deadlines.append(temp_dict)
+			data["htm_deadlines"] = htm_deadlines
+			data['withdrawed_members'] = json.loads(data['withdrawed_members'])
+			if position_obj.kickoff_start_date:
+				data['kickoff_start_date'] = position_obj.kickoff_start_date.strftime("%m-%d-%Y")
+			if position_obj.target_deadline:
+				data['target_deadline'] = position_obj.target_deadline.strftime("%m-%d-%Y")
+				data['stages'] = json.loads(data['stages'])
+				now = datetime.today().date()
+				candidates_obj = []
+				for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
+					candidates_obj.append(cao.candidate)
+				members_list = position_obj.htms.all()
+				for member in members_list:
+					try:
+						interview_taken = CandidateMarks.objects.filter(op_id=position_obj.id, marks_given_by=member.id).count()
+						if interview_taken <= len(candidates_obj):
+							data['deadline'] = True
+					except:
+						pass
+				delta = position_obj.target_deadline - now
+				for stage in data['stages']:
+					if 'completed' in stage:
+						pass
+					else:
+						stage['completed'] = False
+				if delta.days < 0 and position_obj.target_deadline == False:
+					data['deadline'] = True
+				
+			candidates_objs = []
+			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
+				candidates_objs.append(cao.candidate.candidate_id)
+			data['total_candidates'] = len(candidates_objs)
+			if "is_htm" in request.user.profile.roles:
+				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id, marks_given_by=request.user.profile.id)
+				data['interviews_to_complete'] = len(candidates_objs) - marks_given_to.count()
+				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+				data['voting_history_holds'] = marks_given_to.filter(hold=True).count()
+				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+			else:
+				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id)
+				data['interviews_to_complete'] = 0
+				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+				data['voting_history_holds'] = marks_given_to.filter(hold=True).count()
+				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+			data['delayed'] = False
+			data['no_of_hired_positions'] = Hired.objects.filter(op_id=op_id).count()
+			try:
+				data["formated_target_deadline"] = position_obj.target_deadline.strftime("%B %d, %Y")
+			except Exception as e:
+				print(e)
+			response = {}
+			response['data'] = data
+			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
