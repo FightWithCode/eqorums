@@ -295,7 +295,7 @@ class GetPositionSummary(APIView):
 					temp_dict["color"] = [d["color"] for d in hiring_group.members_color if d['htm'] == deadline.htm.id][0]
 				except Exception as e:
 					temp_dict["color"] = None
-				temp_dict["profile_pic"] = deadline.htm.profile_photo				
+				temp_dict["profile_pic"] = deadline.htm.profile_photo.url if deadline.htm.profile_photo else None 				
 				htm_deadlines.append(temp_dict)
 			
 			if start and open_position.target_deadline:
