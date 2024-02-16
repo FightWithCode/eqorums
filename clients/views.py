@@ -147,6 +147,8 @@ class SingleClientDataView(APIView):
 		data = request.data.copy()
 		if data.get('logo') == 'null':
 			data.pop('logo', None)
+		if request.data.get("key_contact_email")) not in ["null", "None", None] and Profile.objects.filter(email=request.data.get("key_contact_email")).exists() or Candidate.objects.filter(email=request.data.get("key_contact_email")).exists():
+			return Response({'message': "Email already exists!"}, status=status.HTTP_400_BAD_REQUEST)			
 		try:
 			client_serializer = ClientSerializer(data=data)
 			if client_serializer.is_valid():
@@ -172,9 +174,7 @@ class SingleClientDataView(APIView):
 						try:
 							profile_photo = request.FILES['ca_profile_pic']
 						except Exception as e:
-							profile_photo = None
-						if Profile.objects.filter(email=request.data.get("key_contact_email")).exists() or Candidate.objects.filter(email=request.data.get("key_contact_email")).exists():
-							return Response({'message': "Email already exists!"}, status=status.HTTP_400_BAD_REQUEST)
+							profile_photo = None	
 						key_profile = Profile.objects.create(user=key_user, phone_number=request.data.get("key_contact_phone_no"), skype_id=request.data.get("key_contact_skype_id"), job_title=request.data.get('job_title'), email=request.data.get("key_contact_email"), client=client_obj.id, profile_photo=profile_photo, first_log=True, roles=["is_ca"])
 						client_obj.ca_profile = key_profile
 					except Exception as e:
