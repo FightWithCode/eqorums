@@ -93,6 +93,7 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 	hiring_team = serializers.SerializerMethodField(read_only=True)
 	position_filled = serializers.SerializerMethodField(read_only=True)
 	status = serializers.SerializerMethodField(read_only=True)
+	decumentation = serializers.SerializerMethodField(read_only=True)
 	class Meta:
 		model = OpenPosition
 		fields = '__all__'

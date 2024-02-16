@@ -47,10 +47,14 @@ from django.core.files.storage import FileSystemStorage
 from django.db.models import Avg
 from django.db.models import Q
 from django.utils.html import strip_tags
+# serializers import
+from openposition.serializers import (
+	OpenPositionSerializer
+)
+
 from .serializers import (
 	ClientSerializer,
 	ProfileSerializer,
-	OpenPositionSerializer,
 	ChangePasswordSerializer,
 	HiringGroupSerializer,
 	GetHiringGroupSerializer,
@@ -10169,107 +10173,105 @@ class GetArchivedOpenPosition(APIView):
 	permission_classes = (permissions.IsAuthenticated,)
 
 	def get(self, request, op_id):
-		try:
-			position_obj = OpenPosition.objects.get(id=op_id)
-			openposition_serializer = OpenPositionSerializer(position_obj)
-			data = openposition_serializer.data
-			if position_obj.sourcing_deadline:
-				data['sourcing_deadline'] = position_obj.sourcing_deadline.strftime("%m-%d-%Y")
-			htm_deadlines = []
-			for deadline in HTMsDeadline.objects.filter(open_position=position_obj):
-				temp_dict = {}
-				temp_dict["deadline"] = deadline.deadline.strftime("%m-%d-%Y")
-				temp_dict["htm"] = deadline.htm.id
-				htm_deadlines.append(temp_dict)
-			data["htm_deadlines"] = htm_deadlines
-			data['withdrawed_members'] = position_obj.withdrawed_members.all().values_list("id", flat=True)
-			if position_obj.kickoff_start_date:
-				data['kickoff_start_date'] = position_obj.kickoff_start_date.strftime("%m-%d-%Y")
-			if position_obj.target_deadline:
-				data['target_deadline'] = position_obj.target_deadline.strftime("%m-%d-%Y")
-				data['stages'] = json.loads(data['stages'])
-				now = datetime.today().date()
-				candidates_obj = []
-				for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
-					candidates_obj.append(cao.candidate)
-				members_list = position_obj.htms.all()
-				for member in members_list:
-					try:
-						interview_taken = CandidateMarks.objects.filter(op_id=position_obj.id, marks_given_by=member.id).count()
-						if interview_taken <= len(candidates_obj):
-							data['deadline'] = True
-					except:
-						pass
-				delta = position_obj.target_deadline - now
-				for stage in data['stages']:
-					if 'completed' in stage:
-						pass
-					else:
-						stage['completed'] = False
-				if delta.days < 0 and position_obj.target_deadline == False:
-					data['deadline'] = True
-				
-			data['decumentation'] = json.loads(data['decumentation'])
-			candidates_objs = []
-			candidates_list = []
-			# for i in Candidate.objects.all():
-			# 	if op_id in json.loads(i.associated_op_ids):
-			# 		candidates_objs.append(i.candidate_id)
-			# 		candidates_list.append(i)
+		# try:
+		position_obj = OpenPosition.objects.get(id=op_id)
+		openposition_serializer = OpenPositionSerializer(position_obj)
+		data = openposition_serializer.data
+		if position_obj.sourcing_deadline:
+			data['sourcing_deadline'] = position_obj.sourcing_deadline.strftime("%m-%d-%Y")
+		htm_deadlines = []
+		for deadline in HTMsDeadline.objects.filter(open_position=position_obj):
+			temp_dict = {}
+			temp_dict["deadline"] = deadline.deadline.strftime("%m-%d-%Y")
+			temp_dict["htm"] = deadline.htm.id
+			htm_deadlines.append(temp_dict)
+		data["htm_deadlines"] = htm_deadlines
+		data['withdrawed_members'] = position_obj.withdrawed_members.all().values_list("id", flat=True)
+		if position_obj.kickoff_start_date:
+			data['kickoff_start_date'] = position_obj.kickoff_start_date.strftime("%m-%d-%Y")
+		if position_obj.target_deadline:
+			data['target_deadline'] = position_obj.target_deadline.strftime("%m-%d-%Y")
+			now = datetime.today().date()
+			candidates_obj = []
 			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
-				candidates_objs.append(cao.candidate.candidate_id)
-				candidates_list.append(cao.candidate)
-			data['total_candidates'] = len(candidates_objs)
-			if "is_htm" in request.user.profile.roles:
-				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id, marks_given_by=request.user.profile.id)
-				data['interviews_to_complete'] = len(candidates_objs) - marks_given_to.count()
-				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
-				data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
-				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+				candidates_obj.append(cao.candidate)
+			members_list = position_obj.htms.all()
+			for member in members_list:
+				try:
+					interview_taken = CandidateMarks.objects.filter(op_id=position_obj.id, marks_given_by=member.id).count()
+					if interview_taken <= len(candidates_obj):
+						data['deadline'] = True
+				except:
+					pass
+			delta = position_obj.target_deadline - now
+			for stage in data['stages']:
+				if 'completed' in stage:
+					pass
+				else:
+					stage['completed'] = False
+			if delta.days < 0 and position_obj.target_deadline == False:
+				data['deadline'] = True
+			
+		candidates_objs = []
+		candidates_list = []
+		# for i in Candidate.objects.all():
+		# 	if op_id in json.loads(i.associated_op_ids):
+		# 		candidates_objs.append(i.candidate_id)
+		# 		candidates_list.append(i)
+		for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
+			candidates_objs.append(cao.candidate.candidate_id)
+			candidates_list.append(cao.candidate)
+		data['total_candidates'] = len(candidates_objs)
+		if "is_htm" in request.user.profile.roles:
+			marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id, marks_given_by=request.user.profile.id)
+			data['interviews_to_complete'] = len(candidates_objs) - marks_given_to.count()
+			data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+			data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
+			data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+		else:
+			marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id)
+			data['interviews_to_complete'] = 0
+			data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+			data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
+			data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+		data['delayed'] = False
+		data['no_of_hired_positions'] = Hired.objects.filter(op_id=op_id).count()
+		# get_candidate data
+		candidate_data = []
+		for can in candidates_list:
+			temp_can = {}
+			temp_can["name"] = can.name
+			temp_can["last_name"] = can.last_name
+			temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
+			if can.linkedin_data.get("profile_pic_url") and can.linkedin_data.get("profile_pic_url") != "null":
+				temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
 			else:
-				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id)
-				data['interviews_to_complete'] = 0
-				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
-				data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
-				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
-			data['delayed'] = False
-			data['no_of_hired_positions'] = Hired.objects.filter(op_id=op_id).count()
-			# get_candidate data
-			candidate_data = []
-			for can in candidates_list:
-				temp_can = {}
-				temp_can["name"] = can.name
-				temp_can["last_name"] = can.last_name
-				temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
-				if can.linkedin_data.get("profile_pic_url") and can.linkedin_data.get("profile_pic_url") != "null":
-					temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
-				else:
-					temp_can["profile_photo"] = can.profile_photo
+				temp_can["profile_photo"] = can.profile_photo
 
-				if "is_htm" in request.user.profile.roles:
-					marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id, marks_given_by=request.user.profile.id)
-					temp_can['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
-					temp_can['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
-					temp_can['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
-				else:
-					marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id)
-					temp_can['interviews_to_complete'] = 0
-					temp_can['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
-					temp_can['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
-					temp_can['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
-				# get if candidate is hired
-				if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
-					temp_can['isHired'] = True
-				else:
-					temp_can['isHired'] = False
-				candidate_data.append(temp_can)
-			data["candidate_data"] = candidate_data
-			response = {}
-			response['data'] = data
+			if "is_htm" in request.user.profile.roles:
+				marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id, marks_given_by=request.user.profile.id)
+				temp_can['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+				temp_can['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+				temp_can['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
+			else:
+				marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id)
+				temp_can['interviews_to_complete'] = 0
+				temp_can['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+				temp_can['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+				temp_can['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
+			# get if candidate is hired
+			if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
+				temp_can['isHired'] = True
+			else:
+				temp_can['isHired'] = False
+			candidate_data.append(temp_can)
+		data["candidate_data"] = candidate_data
+		response = {}
+		response['data'] = data
 
-			return Response(response, status=status.HTTP_200_OK)
-		except Exception as e:
-			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+		return Response(response, status=status.HTTP_200_OK)
+		# except Exception as e:
+		# 	return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GetFitAnalysis(APIView):
