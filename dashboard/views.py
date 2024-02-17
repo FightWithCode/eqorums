@@ -10536,7 +10536,7 @@ class GetAllOPData(APIView):
 			for can in candidates_objs:
 				try:
 					temp_can = {}
-					temp_can["associated_ddata"] = {}
+					temp_can["associated_data"] = {}
 					try:
 						cao = CandidateAssociateData.objects.get(candidate=can, open_position=position_obj)
 						temp_can["location"] = cao.location
@@ -10598,7 +10598,7 @@ class GetAllOPData(APIView):
 						# Check Candidate Marks Code from here
 					# Get all scheduled interviews for the candidate
 					HM_vote = {}
-					members_list = hiring_group_obj.members_list.all()
+					members_list = position_obj.htms.all()
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id)
 					marks_by_htms = []
 					# for calculation avg marks
