@@ -10217,7 +10217,7 @@ class GetArchivedOpenPosition(APIView):
 			candidates_list = []
 			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
 				candidates_objs.append(cao.candidate.candidate_id)
-				candidates_list.append(cao.candidate)
+				candidates_list.append(cao)
 			data['total_candidates'] = len(candidates_objs)
 			if "is_htm" in request.user.profile.roles:
 				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidates_objs, op_id=op_id, marks_given_by=request.user.profile.id)
@@ -10237,31 +10237,39 @@ class GetArchivedOpenPosition(APIView):
 			candidate_data = []
 			for can in candidates_list:
 				temp_can = {}
-				temp_can["name"] = can.name
-				temp_can["id"] = can.candidate_id
-				temp_can["last_name"] = can.last_name
-				temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
-				if can.linkedin_data.get("profile_pic_url") and can.linkedin_data.get("profile_pic_url") != "null":
-					temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
+				temp_can["name"] = can.candidate.name
+				temp_can["id"] = can.candidate.candidate_id
+				temp_can["last_name"] = can.candidate.last_name
+				temp_can["full_name"] = can.candidate.user.get_full_name()
+				temp_can["linkedin"] = can.candidate.email
+				temp_can["phone_no"] = can.candidate.phone_number
+				if can.candidate.linkedin_data.get("profile_pic_url") and can.candidate.linkedin_data.get("profile_pic_url") != "null":
+					temp_can["profile_photo"] = can.candidate.linkedin_data.get("profile_pic_url")
 				else:
-					temp_can["profile_photo"] = can.profile_photo
+					temp_can["profile_photo"] = can.candidate.profile_photo
 
 				if "is_htm" in request.user.profile.roles:
-					marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id, marks_given_by=request.user.profile.id)
+					marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate.candidate_id, op_id=op_id, marks_given_by=request.user.profile.id)
 					temp_can['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
 					temp_can['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
 					temp_can['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
 				else:
-					marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id)
+					marks_given_to = CandidateMarks.objects.filter(candidate_id=can.candidate.candidate_id, op_id=op_id)
 					temp_can['interviews_to_complete'] = 0
 					temp_can['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
 					temp_can['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
 					temp_can['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
 				# get if candidate is hired
-				if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
+				if Hired.objects.filter(candidate_id=can.candidate.candidate_id, op_id=op_id):
 					temp_can['isHired'] = True
 				else:
 					temp_can['isHired'] = False
+				# candidate associated data
+				temp_can["location"] = cao.location
+				temp_can["desired_location"] = cao.desired_work_location
+				temp_can["salary_req"] = cao.salary_req
+				temp_can["work_auth"] = cao.work_auth
+				temp_can["current_position"] = cao.currently
 				candidate_data.append(temp_can)
 			data["candidate_data"] = candidate_data
 			response = {}
