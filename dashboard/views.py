@@ -87,7 +87,8 @@ from openposition.models import (
 	CandidateMarks,
 	CandidateAssociateData,
 	CandidateStatus,
-	PositionDoc
+	PositionDoc,
+	Offered
 )
 from hiringgroup.models import HiringGroup
 from clients.serializers import ClientSerializer
@@ -108,7 +109,6 @@ from .models import (
 	APIData,
 	SelectedAnalyticsDashboard,
 	ProTip,
-	Offered,
 	CandidateAvailability,
 	EvaluationComment,
 	WithdrawCandidateData,
@@ -10343,6 +10343,8 @@ class GetFitAnalysis(APIView):
 					temp_can["name"] = can.name
 					temp_can["last_name"] = can.last_name
 					temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
+					temp_can["offers"] = Offered.objects.filter(candidate_id=can.candidate_id).count()
+					temp_can["interviews_last_30"] = Interview.objects.filter(candidate=can).count()
 					if can.linkedin_data.get("profile_pic_url"):
 						temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
 					else:
@@ -10549,6 +10551,7 @@ class GetAllOPData(APIView):
 			# get_candidate data
 			candidate_data = []
 			for can in candidates_objs:
+				print("in can")
 				try:
 					temp_can = {}
 					temp_can["associated_data"] = {}
@@ -10601,6 +10604,8 @@ class GetAllOPData(APIView):
 						eval_data.append(t_data)
 					temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
 					temp_can["eval_notes"] = eval_data
+					temp_can["offers"] = Offered.objects.filter(candidate_id=can.candidate_id).count()
+					temp_can["interviews_last_30"] = Interview.objects.filter(candidate=can).count()
 					if can.linkedin_data.get("profile_pic_url"):
 						temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
 					else:
@@ -10750,7 +10755,7 @@ class GetAllOPData(APIView):
 					temp_can["marks_by_htms"] = marks_by_htms
 					candidate_data.append(temp_can)
 				except Exception as e:
-					print(e)
+					print(e, "candidate")
 			candidate_data = sorted(candidate_data, key=lambda i: i['isHired'], reverse=True)
 			candidate_data = sorted(candidate_data, key=lambda i: i['avg_marks'], reverse=True)
 			data["candidates_data"] = candidate_data
