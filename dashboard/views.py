@@ -10215,10 +10215,6 @@ class GetArchivedOpenPosition(APIView):
 				
 			candidates_objs = []
 			candidates_list = []
-			# for i in Candidate.objects.all():
-			# 	if op_id in json.loads(i.associated_op_ids):
-			# 		candidates_objs.append(i.candidate_id)
-			# 		candidates_list.append(i)
 			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
 				candidates_objs.append(cao.candidate.candidate_id)
 				candidates_list.append(cao.candidate)
@@ -10242,6 +10238,7 @@ class GetArchivedOpenPosition(APIView):
 			for can in candidates_list:
 				temp_can = {}
 				temp_can["name"] = can.name
+				temp_can["id"] = can.candidate_id
 				temp_can["last_name"] = can.last_name
 				temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
 				if can.linkedin_data.get("profile_pic_url") and can.linkedin_data.get("profile_pic_url") != "null":
