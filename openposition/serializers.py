@@ -74,10 +74,7 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 			return False
 	def get_members(self, obj):
 		try:
-			group_obj = HiringGroup.objects.get(group_id=obj.hiring_group)
-			members = list(group_obj.members_list.all())
-			if group_obj.hr_profile in members:
-				members.remove(group_obj.hr_profile)
+			members = obj.htms.all()
 			data = []
 			candidates_obj = 0
 			for k in Candidate.objects.all():
@@ -98,7 +95,7 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 				try:
 					htm_obj = i
 					temp_dict["name"] = htm_obj.user.get_full_name()
-					temp_dict["profile_pic"] = htm_obj.profile_photo
+					temp_dict["profile_pic"] = htm_obj.profile_photo.url if  htm_obj.profile_photo else None
 					temp_dict["job_title"] = htm_obj.job_title
 					temp_dict["phone"] = htm_obj.phone_number
 					temp_dict["email"] = htm_obj.email
@@ -112,23 +109,15 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 						temp_dict["masked_email"] = htm_obj.email
 						temp_dict["masked_phone"] = htm_obj.phone_number
 					temp_dict["skype"] = htm_obj.skype_id
-					if htm_obj==group_obj.hod_profile:
-						temp_dict['isHod'] = True
-					else:
-						temp_dict['isHod'] = False
-					if htm_obj == group_obj.hr_profile:
-						temp_dict['isHr'] = True
-					else:
-						temp_dict['isHr'] = False
 				except:
 					pass
-				if i in json.loads(obj.withdrawed_members):
+				if i in obj.withdrawed_members.all():
 					temp_dict['is_withdrawed'] = True
 				else:
 					temp_dict['is_withdrawed'] = False
 				data.append(temp_dict)
 			return data
-		except:
+		except Exception as e:
 			return []
 	
 	def get_position_completion(self, obj):

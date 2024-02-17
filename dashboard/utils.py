@@ -209,7 +209,6 @@ def get_client_openposition_data(client_id):
 	return open_position_data
 
 
-
 def get_liked_candidates_data(user):
 	liked_candidates_data = {}
 	months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

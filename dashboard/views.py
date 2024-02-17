@@ -86,7 +86,8 @@ from openposition.models import (
 	Interview,
 	CandidateMarks,
 	CandidateAssociateData,
-	CandidateStatus
+	CandidateStatus,
+	PositionDoc
 )
 from hiringgroup.models import HiringGroup
 from clients.serializers import ClientSerializer
@@ -10505,11 +10506,11 @@ class GetAllOPData(APIView):
 			position_obj = OpenPosition.objects.get(id=op_id)
 			openposition_serializer = OpenPositionSerializer(position_obj)
 			data = openposition_serializer.data
-			data['decumentation'] = json.loads(data['decumentation'])
+			docs = []
+			for j in PositionDoc.objects.filter(openposition__id=op_id):
+				docs.append(j.file.url)
+			data['documentations'] = docs
 			candidates_objs = []
-			# for i in Candidate.objects.all():
-			# 	if op_id in json.loads(i.associated_op_ids):
-			# 		candidates_objs.append(i)
 			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
 				candidates_objs.append(cao.candidate)
 			data['total_candidates'] = len(candidates_objs)
@@ -10576,14 +10577,14 @@ class GetAllOPData(APIView):
 						t_data["date"] = str(e.date)
 						t_data["position"] = e.position.position_title
 						t_data["given_by"] = e.given_by.user.get_full_name()
-						t_data["given_by_pic"] = e.given_by.profile_photo
+						t_data["given_by_pic"] = e.given_by.profile_photo.url if e.given_by.profile_photo else None
 						eval_data.append(t_data)
 					temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
 					temp_can["eval_notes"] = eval_data
 					if can.linkedin_data.get("profile_pic_url"):
 						temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
 					else:
-						temp_can["profile_photo"] = can.profile_photo
+						temp_can["profile_photo"] = can.profile_photo.url if can.profile_photo else None
 					# get hire status
 					if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
 						temp_can['isHired'] = True
