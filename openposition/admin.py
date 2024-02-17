@@ -8,7 +8,8 @@ from openposition.models import (
     Interview,
     Hired,
     Offered,
-    HTMWeightage
+    HTMWeightage,
+    CandidateAssociateData
 )
 
 admin.site.register(OpenPosition)
@@ -17,3 +18,4 @@ admin.site.register(Interview)
 admin.site.register(Hired)
 admin.site.register(HTMWeightage)
 admin.site.register(Offered)
+admin.site.register(CandidateAssociateData)

@@ -10516,9 +10516,24 @@ class GetAllOPData(APIView):
 				docs.append(j.file.url)
 			data['documentations'] = docs
 			candidates_objs = []
+			candidate_ids = []
 			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
 				candidates_objs.append(cao.candidate)
-			data['total_candidates'] = len(candidates_objs)
+				candidate_ids.append(cao.candidate.candidate_id)
+			
+			if "is_htm" in request.user.profile.roles:
+				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidate_ids, op_id=op_id, marks_given_by=request.user.profile.id)
+				data['interviews_to_complete'] = len(candidate_ids) - marks_given_to.count()
+				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+				data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
+				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+			else:
+				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidate_ids, op_id=op_id)
+				data['interviews_to_complete'] = 0
+				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+				data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
+				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+			data['total_candidates'] = len(candidate_ids)
 			data['no_of_hired_positions'] = Hired.objects.filter(op_id=op_id).count()
 			data['no_of_hireds'] = Hired.objects.filter(op_id=op_id).count()
 			data["special_intruction"] = "some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name"
