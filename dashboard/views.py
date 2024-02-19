@@ -10450,14 +10450,6 @@ class GetFitAnalysis(APIView):
 							chart_data.append({"skill": position_obj.init_qualify_ques_7, "candidate_score": marks_dict['init_qualify_ques_7'], "skill_weightage": position_obj.init_qualify_ques_weightage_7})
 						if position_obj.init_qualify_ques_8:
 							chart_data.append({"skill": position_obj.init_qualify_ques_8, "candidate_score": marks_dict['init_qualify_ques_8'], "skill_weightage": position_obj.init_qualify_ques_weightage_8})
-						# chart_data.append({"skill": position_obj.init_qualify_ques_1, "candidate_score": marks_dict['init_qualify_ques_1'], "skill_weightage": position_obj.init_qualify_ques_weightage_1})
-						# chart_data.append({"skill": position_obj.init_qualify_ques_2, "candidate_score": marks_dict['init_qualify_ques_2'], "skill_weightage": position_obj.init_qualify_ques_weightage_2})
-						# chart_data.append({"skill": position_obj.init_qualify_ques_3, "candidate_score": marks_dict['init_qualify_ques_3'], "skill_weightage": position_obj.init_qualify_ques_weightage_3})
-						# chart_data.append({"skill": "Skill 1", "candidate_score": 5, "skill_weightage": 5})
-						# chart_data.append({"skill": "Skill 2", "candidate_score": 6, "skill_weightage": 8})
-						# chart_data.append({"skill": "Skill 3", "candidate_score": 4, "skill_weightage": 10})
-						# chart_data.append({"skill": "Skill 4", "candidate_score": 5, "skill_weightage": 9})
-						# chart_data.append({"skill": "Skill 5", "candidate_score": 7, "skill_weightage": 7})
 						temp_can["chart_data"] = chart_data
 						count = 0
 						avg_marks = 0
@@ -10623,135 +10615,97 @@ class GetAllOPData(APIView):
 					marks_by_htms = []
 					# for calculation avg marks
 					avg_marks_dict = {}
-					avg_marks_dict['init_qualify_ques_1'] = 0
-					avg_marks_dict['init_qualify_ques_2'] = 0
-					avg_marks_dict['init_qualify_ques_3'] = 0
-					avg_marks_dict['init_qualify_ques_4'] = 0
-					avg_marks_dict['init_qualify_ques_5'] = 0
-					avg_marks_dict['init_qualify_ques_6'] = 0
-					avg_marks_dict['init_qualify_ques_7'] = 0
-					avg_marks_dict['init_qualify_ques_8'] = 0
-					htm_weightage_1_total = 0
-					htm_weightage_2_total = 0
-					htm_weightage_3_total = 0
-					htm_weightage_4_total = 0
-					htm_weightage_5_total = 0
-					htm_weightage_6_total = 0
-					htm_weightage_7_total = 0
-					htm_weightage_8_total = 0
+					htms_total_weightages = {}
+					skill_scount = 1
+					for skill in position_obj.skillsets:
+						avg_marks_dict["init_qualify_ques_{}".format(skill_scount)] = 0
+						htms_total_weightages["htm_weightage_{}_total".format(skill_scount)] = 0
+						skill_scount += 1
 					for c_obj in candidate_marks_obj:
 						given_by = c_obj.marks_given_by
 						try:
 							htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
-							htm_weightage_1_total = htm_weightage_1_total + htm_weightage_obj.init_qualify_ques_1_weightage
-							htm_weightage_2_total = htm_weightage_2_total + htm_weightage_obj.init_qualify_ques_2_weightage
-							htm_weightage_3_total = htm_weightage_3_total + htm_weightage_obj.init_qualify_ques_3_weightage
-							htm_weightage_4_total = htm_weightage_4_total + htm_weightage_obj.init_qualify_ques_4_weightage
-							htm_weightage_5_total = htm_weightage_5_total + htm_weightage_obj.init_qualify_ques_5_weightage
-							htm_weightage_6_total = htm_weightage_6_total + htm_weightage_obj.init_qualify_ques_6_weightage
-							htm_weightage_7_total = htm_weightage_7_total + htm_weightage_obj.init_qualify_ques_7_weightage
-							htm_weightage_8_total = htm_weightage_8_total + htm_weightage_obj.init_qualify_ques_8_weightage
+							weightage_count = 1
+							for weightage in htm_weightage_obj.weightages:
+								htms_total_weightages["htm_weightage_{}_total".format(weightage_count)] += htm_weightage_obj.weightages[weightage]
+								# htms_total_weightages.append(htm_weightage_obj.weightages[weightage])
 						except Exception as e:
-							htm_weightage_1_total = htm_weightage_1_total + 10
-							htm_weightage_2_total = htm_weightage_2_total + 10
-							htm_weightage_3_total = htm_weightage_3_total + 10
-							htm_weightage_4_total = htm_weightage_4_total + 10
-							htm_weightage_5_total = htm_weightage_5_total + 10
-							htm_weightage_6_total = htm_weightage_6_total + 10
-							htm_weightage_7_total = htm_weightage_7_total + 10
-							htm_weightage_8_total = htm_weightage_8_total + 10
+							weightage_count = 1
+							for weightage in htm_weightage_obj.weightages:
+								htms_total_weightages["htm_weightage_{}_total".format(weightage_count)] += 10
+								# htms_total_weightages.append(10)
+					print(avg_marks_dict)
+					print("------------")
+					print(htms_total_weightages)
 					for c_obj in candidate_marks_obj:
 						given_by = c_obj.marks_given_by
 						marks_dict = {}
 						marks_dict["given_by"] = given_by
-						marks_dict['init_qualify_ques_1'] = c_obj.criteria_1_marks
-						marks_dict['init_qualify_ques_2'] = c_obj.criteria_2_marks
-						marks_dict['init_qualify_ques_3'] = c_obj.criteria_3_marks
-						marks_dict['init_qualify_ques_4'] = c_obj.criteria_4_marks
-						marks_dict['init_qualify_ques_5'] = c_obj.criteria_5_marks
-						marks_dict['init_qualify_ques_6'] = c_obj.criteria_6_marks
-						marks_dict['init_qualify_ques_7'] = c_obj.criteria_7_marks
-						marks_dict['init_qualify_ques_8'] = c_obj.criteria_8_marks
-						question_answer_dict = {}
-						question_answer_dict["init_qualify_ques_suggestion_1"] = c_obj.suggestion_1
-						question_answer_dict["init_qualify_ques_suggestion_2"] = c_obj.suggestion_2
-						question_answer_dict["init_qualify_ques_suggestion_3"] = c_obj.suggestion_3
-						question_answer_dict["init_qualify_ques_suggestion_4"] = c_obj.suggestion_4
-						question_answer_dict["init_qualify_ques_suggestion_5"] = c_obj.suggestion_5
-						question_answer_dict["init_qualify_ques_suggestion_6"] = c_obj.suggestion_6
-						question_answer_dict["init_qualify_ques_suggestion_7"] = c_obj.suggestion_7
-						question_answer_dict["init_qualify_ques_suggestion_8"] = c_obj.suggestion_8
-						marks_dict["question_answer"] = question_answer_dict
+						for k,v in c_obj.marks["marks"].items():
+							marks_dict[k] = v
+						marks_dict["question_answer"] = c_obj.marks["answers"]
 						marks_by_htms.append(marks_dict)
 						# for calculating avg marks
+						htm_weightage = {}
+						# htm_weightage = []
 						try:
 							htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
-							htm_weightage_1 = htm_weightage_obj.init_qualify_ques_1_weightage
-							htm_weightage_2 = htm_weightage_obj.init_qualify_ques_2_weightage
-							htm_weightage_3 = htm_weightage_obj.init_qualify_ques_3_weightage
-							htm_weightage_4 = htm_weightage_obj.init_qualify_ques_4_weightage
-							htm_weightage_5 = htm_weightage_obj.init_qualify_ques_5_weightage
-							htm_weightage_6 = htm_weightage_obj.init_qualify_ques_6_weightage
-							htm_weightage_7 = htm_weightage_obj.init_qualify_ques_7_weightage
-							htm_weightage_8 = htm_weightage_obj.init_qualify_ques_8_weightage
+							weightage_count = 1
+							for weightage in htm_weightage_obj.weightages:
+								htm_weightage[weightage] = htm_weightage_obj.weightages[weightage]
+								# htm_weightage.append(htm_weightage_obj.weightages[weightage])
 						except Exception as e:
-							htm_weightage_1 = 10
-							htm_weightage_2 = 10
-							htm_weightage_3 = 10
-							htm_weightage_4 = 10
-							htm_weightage_5 = 10
-							htm_weightage_6 = 10
-							htm_weightage_7 = 10
-							htm_weightage_8 = 10
-						avg_marks_dict['init_qualify_ques_1'] = avg_marks_dict['init_qualify_ques_1'] + c_obj.criteria_1_marks * htm_weightage_1
-						avg_marks_dict['init_qualify_ques_2'] = avg_marks_dict['init_qualify_ques_2'] + c_obj.criteria_2_marks * htm_weightage_2
-						avg_marks_dict['init_qualify_ques_3'] = avg_marks_dict['init_qualify_ques_3'] + c_obj.criteria_3_marks * htm_weightage_3
-						avg_marks_dict['init_qualify_ques_4'] = avg_marks_dict['init_qualify_ques_4'] + c_obj.criteria_4_marks * htm_weightage_4
-						avg_marks_dict['init_qualify_ques_5'] = avg_marks_dict['init_qualify_ques_5'] + c_obj.criteria_5_marks * htm_weightage_5
-						avg_marks_dict['init_qualify_ques_6'] = avg_marks_dict['init_qualify_ques_6'] + c_obj.criteria_6_marks * htm_weightage_6
-						avg_marks_dict['init_qualify_ques_7'] = avg_marks_dict['init_qualify_ques_7'] + c_obj.criteria_7_marks * htm_weightage_7
-						avg_marks_dict['init_qualify_ques_8'] = avg_marks_dict['init_qualify_ques_8'] + c_obj.criteria_8_marks * htm_weightage_8
-					if candidate_marks_obj:
-						avg_marks_dict['init_qualify_ques_1'] = round(avg_marks_dict['init_qualify_ques_1'] / htm_weightage_1_total, 1)
-						avg_marks_dict['init_qualify_ques_2'] = round(avg_marks_dict['init_qualify_ques_2'] / htm_weightage_2_total, 1)
-						avg_marks_dict['init_qualify_ques_3'] = round(avg_marks_dict['init_qualify_ques_3'] / htm_weightage_3_total, 1)
-						avg_marks_dict['init_qualify_ques_4'] = round(avg_marks_dict['init_qualify_ques_4'] / htm_weightage_4_total, 1)
-						avg_marks_dict['init_qualify_ques_5'] = round(avg_marks_dict['init_qualify_ques_5'] / htm_weightage_5_total, 1)
-						avg_marks_dict['init_qualify_ques_6'] = round(avg_marks_dict['init_qualify_ques_6'] / htm_weightage_6_total, 1)
-						avg_marks_dict['init_qualify_ques_7'] = round(avg_marks_dict['init_qualify_ques_7'] / htm_weightage_7_total, 1)
-						avg_marks_dict['init_qualify_ques_8'] = round(avg_marks_dict['init_qualify_ques_8'] / htm_weightage_8_total, 1)
-						count = 0
-						avg_marks = 0
-						if avg_marks_dict['init_qualify_ques_1'] not in [0, 0.0]:
-							count = count + position_obj.init_qualify_ques_weightage_1
-							avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_1'] * position_obj.init_qualify_ques_weightage_1
-						if avg_marks_dict['init_qualify_ques_2'] not in [0, 0.0]:
-							count = count + position_obj.init_qualify_ques_weightage_2
-							avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_2'] * position_obj.init_qualify_ques_weightage_2
-						if avg_marks_dict['init_qualify_ques_3'] not in [0, 0.0]:
-							count = count + position_obj.init_qualify_ques_weightage_3
-							avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_3'] * position_obj.init_qualify_ques_weightage_3
-						if avg_marks_dict['init_qualify_ques_4'] not in [0, 0.0]:
-							count = count + position_obj.init_qualify_ques_weightage_4
-							avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_4'] * position_obj.init_qualify_ques_weightage_4
-						if avg_marks_dict['init_qualify_ques_5'] not in [0, 0.0]:
-							count = count + position_obj.init_qualify_ques_weightage_5
-							avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_5'] * position_obj.init_qualify_ques_weightage_5
-						if avg_marks_dict['init_qualify_ques_6'] not in [0, 0.0]:
-							count = count + position_obj.init_qualify_ques_weightage_6
-							avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_6'] * position_obj.init_qualify_ques_weightage_6
-						if avg_marks_dict['init_qualify_ques_7'] not in [0, 0.0]:
-							count = count + position_obj.init_qualify_ques_weightage_7
-							avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_7'] * position_obj.init_qualify_ques_weightage_7
-						if avg_marks_dict['init_qualify_ques_8'] not in [0, 0.0]:
-							count = count + position_obj.init_qualify_ques_weightage_8
-							avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_8'] * position_obj.init_qualify_ques_weightage_8
-						if count:
-							temp_can['avg_marks'] = round(avg_marks / count, 1)
-						else:
-							temp_can['avg_marks'] = 0.0
-					else:
-						temp_can['avg_marks'] = 0.0
+							weightage_count = 1
+							for weightage in htm_weightage_obj.weightages:
+								htm_weightage[weightage] = 10
+								# htm_weightage.append(10)
+						weightage_count = 0
+						for k in avg_marks_dict:
+							avg_marks_dict[k] = avg_marks_dict[k] + c_obj.marks[k] * htm_weightage[weightage_count]
+							weightage_count += 1
+					print(marks_by_htms)
+					print(avg_marks_dict)
+					# Calculate avg marks
+					# if candidate_marks_obj:
+					# 	weightage_count = 0
+					# 	for k in avg_marks_dict:
+					# 		avg_marks_dict[k] = round(avg_marks_dict[k] / htms_total_weightages[weightage_count], 1)
+					# 		weightage_count += 1
+					# 	count = 0
+					# 	avg_marks = 0
+					# 	for k in avg_marks_dict:
+					# 		skillsets_count = 1
+					# 		if avg_marks_dict[k] not in [0, 0.0]:
+					# 			count = count + position_obj.skillsets[]
+					# 			avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_1'] * position_obj.init_qualify_ques_weightage_1
+					# 	if avg_marks_dict['init_qualify_ques_2'] not in [0, 0.0]:
+					# 		count = count + position_obj.init_qualify_ques_weightage_2
+					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_2'] * position_obj.init_qualify_ques_weightage_2
+					# 	if avg_marks_dict['init_qualify_ques_3'] not in [0, 0.0]:
+					# 		count = count + position_obj.init_qualify_ques_weightage_3
+					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_3'] * position_obj.init_qualify_ques_weightage_3
+					# 	if avg_marks_dict['init_qualify_ques_4'] not in [0, 0.0]:
+					# 		count = count + position_obj.init_qualify_ques_weightage_4
+					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_4'] * position_obj.init_qualify_ques_weightage_4
+					# 	if avg_marks_dict['init_qualify_ques_5'] not in [0, 0.0]:
+					# 		count = count + position_obj.init_qualify_ques_weightage_5
+					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_5'] * position_obj.init_qualify_ques_weightage_5
+					# 	if avg_marks_dict['init_qualify_ques_6'] not in [0, 0.0]:
+					# 		count = count + position_obj.init_qualify_ques_weightage_6
+					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_6'] * position_obj.init_qualify_ques_weightage_6
+					# 	if avg_marks_dict['init_qualify_ques_7'] not in [0, 0.0]:
+					# 		count = count + position_obj.init_qualify_ques_weightage_7
+					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_7'] * position_obj.init_qualify_ques_weightage_7
+					# 	if avg_marks_dict['init_qualify_ques_8'] not in [0, 0.0]:
+					# 		count = count + position_obj.init_qualify_ques_weightage_8
+					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_8'] * position_obj.init_qualify_ques_weightage_8
+					# 	if count:
+					# 		temp_can['avg_marks'] = round(avg_marks / count, 1)
+					# 	else:
+					# 		temp_can['avg_marks'] = 0.0
+					# else:
+					# 	temp_can['avg_marks'] = 0.0
+					temp_can['avg_marks'] = 0.0
 					temp_can["marks_by_htms"] = marks_by_htms
 					candidate_data.append(temp_can)
 				except Exception as e:

@@ -218,6 +218,7 @@ class HTMWeightage(models.Model):
     init_qualify_ques_6_weightage = models.IntegerField(default=0)
     init_qualify_ques_7_weightage = models.IntegerField(default=0)
     init_qualify_ques_8_weightage = models.IntegerField(default=0)
+    weightages = models.JSONField(default=get_json_default)
 
 
 class HTMAvailability(models.Model):

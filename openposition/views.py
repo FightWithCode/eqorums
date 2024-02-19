@@ -787,6 +787,7 @@ class AllCandidateFeedback(APIView):
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class GetSingleOpenPosition(APIView):
 	def get(self, request, op_id):
 		try:
