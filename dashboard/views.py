@@ -10609,7 +10609,7 @@ class GetAllOPData(APIView):
 					if can.linkedin_data.get("profile_pic_url"):
 						temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
 					else:
-						temp_can["profile_photo"] = can.profile_photo.url if can.profile_photo else None
+						temp_can["profile_photo"] = can.profile_photo
 					# get hire status
 					if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
 						temp_can['isHired'] = True
