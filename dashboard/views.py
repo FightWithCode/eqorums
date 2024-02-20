@@ -504,13 +504,15 @@ class HiringMemberView(APIView):
 				client_id = int(request.query_params.get('client_id'))
 				hiring_member_objs = Profile.objects.filter(roles__contains="is_htm", client=client_id)
 			except:
-				hiring_member_objs = Profile.objects.filter(is_he=True)
-			print(hiring_member_objs)
+				hiring_member_objs = Profile.objects.filter(roles__contains="is_htm")
 			members_list = []
 			for i in hiring_member_objs:
 				temp_dict = {}
 				temp_dict['id'] = i.id
-				temp_dict['name'] = i.user.first_name + ' ' + i.user.last_name
+				temp_dict['name'] = i.user.get_full_name()
+				temp_dict["email"] = i.email
+				temp_dict["skills"] = "NA"
+				temp_dict["interviews_done"] = "1/10 Interview Completed"
 				members_list.append(temp_dict)
 			response = {}
 			response['data'] = members_list

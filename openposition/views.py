@@ -494,24 +494,18 @@ class AllCandidateFeedback(APIView):
 					given_by = logged_user_profile.id
 					# Get weighage of the HTM if not found then assign 10 by default - Not being used
 					try:
-						htm_weightage_obj = HTMWeightage.objects.filter(op_id=op_id, htm_id=given_by)
-						htm_weightage_1 = htm_weightage_obj.init_qualify_ques_1_weightage
-						htm_weightage_2 = htm_weightage_obj.init_qualify_ques_2_weightage
-						htm_weightage_3 = htm_weightage_obj.init_qualify_ques_3_weightage
-						htm_weightage_4 = htm_weightage_obj.init_qualify_ques_4_weightage
-						htm_weightage_5 = htm_weightage_obj.init_qualify_ques_5_weightage
-						htm_weightage_6 = htm_weightage_obj.init_qualify_ques_6_weightage
-						htm_weightage_7 = htm_weightage_obj.init_qualify_ques_7_weightage
-						htm_weightage_8 = htm_weightage_obj.init_qualify_ques_8_weightage
-					except:
-						htm_weightage_1 = 10
-						htm_weightage_2 = 10
-						htm_weightage_3 = 10
-						htm_weightage_4 = 10
-						htm_weightage_5 = 10
-						htm_weightage_6 = 10
-						htm_weightage_7 = 10
-						htm_weightage_8 = 10
+						htm_weightage_obj = HTMsDeadline.objects.get(open_position=position_obj, htm__id=given_by)
+						htm_weightage = htm_weightage_obj.skillset_weightage
+					except HTMsDeadline.DoesNotExist:
+						htm_weightage = []
+						for idx in range(0, len(position_obj.nskillsets)):
+							htm_weightage.append({"skillset_weightage": 10})
+					except Exception as e:
+						print("some error occured while totaling weightages", str(e))
+						# remove this later
+						htm_weightage = []
+						for idx in range(0, len(position_obj.nskillsets)):
+							htm_weightage.append({"skillset_weightage": 10})
 					if candidate_marks_obj:
 						avg_marks = 0
 						count = 0
