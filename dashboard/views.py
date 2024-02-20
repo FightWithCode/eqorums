@@ -512,7 +512,7 @@ class HiringMemberView(APIView):
 				temp_dict['name'] = i.user.get_full_name()
 				temp_dict["email"] = i.email
 				temp_dict["skills"] = "NA"
-				temp_dict["interviews_done"] = "1/10 Interview Completed"
+				temp_dict["interviews_done"] = "1/10"
 				members_list.append(temp_dict)
 			response = {}
 			response['data'] = members_list
