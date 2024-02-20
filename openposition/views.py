@@ -91,7 +91,6 @@ class OpenPositionView(APIView):
             position_obj = OpenPosition.objects.create(
                 client=client_obj,
                 position_title=request.data.get('position_title'),
-                reference=request.data.get('reference'),
                 special_intruction=request.data.get('special_intruction'),
                 hiring_group=None,
                 kickoff_start_date=kickoff_start_date,
@@ -108,8 +107,7 @@ class OpenPositionView(APIView):
                 no_of_open_positions=request.data.get('no_of_open_positions'),
                 currency=request.data.get('currency'),
                 salary_range = request.data.get('salary_range'),
-                local_preference = request.data.get('local_preference'),
-                other_criteria = request.data.get('other_criteria'),
+                candidate_location = request.data.get('candidate_location'),
                 drafted=drafted,
                 work_auth=request.data.get("work_auth"),
                 work_location=request.data.get("work_location"),
@@ -213,7 +211,6 @@ class OpenPositionView(APIView):
                 except:
                     pass
             position_obj.position_title = request.data.get('position_title')
-            position_obj.reference = request.data.get('reference')
             position_obj.special_intruction = request.data.get('special_intruction')
             current_grp = position_obj.hiring_group.group_id if position_obj.hiring_group else None 
             if current_grp and current_grp == request.data.get('hiring_group'):
@@ -234,7 +231,6 @@ class OpenPositionView(APIView):
 
             position_obj.final_round_completetion_date = request.data.get('final_round_completetion_date')
 
-            position_obj.other_criteria = request.data.get('other_criteria')
             position_obj.skillsets = request.data.get("skillsets")
             position_obj.nskillsets = request.data.get("skillsets")
             if request.data.get('drafted') in ['False', "false", False]:
@@ -243,7 +239,7 @@ class OpenPositionView(APIView):
                 position_obj.drafted = True
             position_obj.currency = request.data.get('currency')
             position_obj.salary_range = request.data.get('salary_range')
-            position_obj.candidate_location = request.data.get('local_preference')
+            position_obj.candidate_location = request.data.get('candidate_location')
             position_obj.no_of_open_positions = request.data.get('no_of_open_positions')
             position_obj.updated_by = request.user
             position_obj.work_auth = request.data.get("work_auth")
@@ -257,7 +253,7 @@ class OpenPositionView(APIView):
                     position_obj.save()
                     if htm_prof not in position_obj.htms.all():
                         position_obj.withdrawed_members.remove(htm_prof)
-                    HTMsDeadline.objects.create(open_position=position_obj, deadline=deadline.get('deadline'), htm=htm_prof, color=deadline.get('color'))
+                    HTMsDeadline.objects.create(open_position=position_obj, deadline=deadline.get('deadline'), htm=htm_prof, skillset_weightage=request.data.get("weightages"))
             except:
                 pass
             position_obj.save()
@@ -884,209 +880,225 @@ class GetAllOPData(APIView):
 	permission_classes = (permissions.IsAuthenticated,)
 
 	def get(self, request, op_id):
-		try:
-			position_obj = OpenPosition.objects.get(id=op_id)
-			openposition_serializer = OpenPositionSerializer(position_obj)
-			data = openposition_serializer.data
-			docs = []
-			for j in PositionDoc.objects.filter(openposition__id=op_id):
-				docs.append(j.file.url)
-			data['documentations'] = docs
-			candidates_objs = []
-			candidate_ids = []
-			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
-				candidates_objs.append(cao.candidate)
-				candidate_ids.append(cao.candidate.candidate_id)
-			
-			if "is_htm" in request.user.profile.roles:
-				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidate_ids, op_id=op_id, marks_given_by=request.user.profile.id)
-				data['interviews_to_complete'] = len(candidate_ids) - marks_given_to.count()
-				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
-				data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
-				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+		# try:
+		position_obj = OpenPosition.objects.get(id=op_id)
+		openposition_serializer = OpenPositionSerializer(position_obj)
+		data = openposition_serializer.data
+		docs = []
+		for j in PositionDoc.objects.filter(openposition__id=op_id):
+			docs.append(j.file.url)
+		data['documentations'] = docs
+		candidates_objs = []
+		candidate_ids = []
+		for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
+			candidates_objs.append(cao.candidate)
+			candidate_ids.append(cao.candidate.candidate_id)
+		
+		if "is_htm" in request.user.profile.roles:
+			marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidate_ids, op_id=op_id, marks_given_by=request.user.profile.id)
+			data['interviews_to_complete'] = len(candidate_ids) - marks_given_to.count()
+			data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+			data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
+			data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+		else:
+			marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidate_ids, op_id=op_id)
+			data['interviews_to_complete'] = 0
+			data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
+			data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
+			data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
+		data['total_candidates'] = len(candidate_ids)
+		data['no_of_hired_positions'] = Hired.objects.filter(op_id=op_id).count()
+		data['no_of_hireds'] = Hired.objects.filter(op_id=op_id).count()
+		data["special_intruction"] = "some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name"
+		data["special_intruction"] = "some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name"
+		# get_candidate data
+		candidate_data = []
+		for can in candidates_objs:
+			print("in can")
+			# try:
+			temp_can = {}
+			temp_can["associated_data"] = {}
+			try:
+				cao = CandidateAssociateData.objects.get(candidate=can, open_position=position_obj)
+				temp_can["location"] = cao.location
+				temp_can["work_auth"] = cao.work_auth
+				temp_can["remote_only"] = cao.remote_only
+				temp_can["remote_pref"] = cao.remote_pref
+				temp_can["office_only"] = cao.office_only
+				temp_can["some_in_office"] = cao.some_in_office
+				temp_can["nickname"] = cao.nickname
+				temp_can["current_position"] = cao.currently
+				temp_can["salary_req"] = cao.salary_req
+				temp_can["desired_work_location"] = cao.desired_work_location
+				temp_can["comments"] = cao.comments
+				temp_can["resume"] = can.documents
+				temp_can["references"] = can.references
+			except Exception as e:
+				print(e)
+				temp_can["location"] = can.location
+				temp_can["work_auth"] = can.work_auth
+				temp_can["remote_only"] = "Not Specified"
+				temp_can["remote_pref"] = "Not Specified"
+				temp_can["some_in_office"] = "Not Specified"
+				temp_can["office_only"] = "Not Specified"
+				temp_can["office_only"] = "Not Specified"
+				temp_can["office_only"] = "Not Specified"
+				temp_can['currency'] = can.currency
+				temp_can["salary_req"] = can.salaryRange
+				temp_can["desired_work_location"] = can.desired_work_location
+				temp_can["comments"] = can.comments
+				temp_can["resume"] = can.documents
+				temp_can["references"] = can.references
+			temp_can["candidate_id"] = can.candidate_id
+			temp_can["name"] = can.name
+			temp_can["email"] = can.email
+			temp_can["linkedin"] = can.skype_id
+			temp_can["last_name"] = can.last_name
+			temp_can["updated_at"] = can.updated_at
+			eval_objs = EvaluationComment.objects.filter(position=position_obj, candidate=can)
+			eval_data = []
+			for e in eval_objs:
+				t_data = {}
+				t_data["notes"] = e.notes
+				t_data["date"] = str(e.date)
+				t_data["position"] = e.position.position_title
+				t_data["given_by"] = e.given_by.user.get_full_name()
+				t_data["given_by_pic"] = e.given_by.profile_photo.url if e.given_by.profile_photo else None
+				eval_data.append(t_data)
+			temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
+			temp_can["eval_notes"] = eval_data
+			temp_can["offers"] = Offered.objects.filter(candidate_id=can.candidate_id).count()
+			temp_can["interviews_last_30"] = Interview.objects.filter(candidate=can).count()
+			if can.linkedin_data.get("profile_pic_url"):
+				temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
 			else:
-				marks_given_to = CandidateMarks.objects.filter(candidate_id__in=candidate_ids, op_id=op_id)
-				data['interviews_to_complete'] = 0
-				data['voting_history_likes'] = marks_given_to.filter(thumbs_up=True).count()
-				data['voting_history_golden'] = marks_given_to.filter(golden_gloves=True).count()
-				data['voting_history_passes'] = marks_given_to.filter(thumbs_down=True).count()
-			data['total_candidates'] = len(candidate_ids)
-			data['no_of_hired_positions'] = Hired.objects.filter(op_id=op_id).count()
-			data['no_of_hireds'] = Hired.objects.filter(op_id=op_id).count()
-			data["special_intruction"] = "some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name"
-			data["special_intruction"] = "some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name"
-			# get_candidate data
-			print(candidates_objs)
-			candidate_data = []
-			for can in candidates_objs:
-				print("in can")
-				try:
-					temp_can = {}
-					temp_can["associated_data"] = {}
-					try:
-						cao = CandidateAssociateData.objects.get(candidate=can, open_position=position_obj)
-						temp_can["location"] = cao.location
-						temp_can["work_auth"] = cao.work_auth
-						temp_can["remote_only"] = cao.remote_only
-						temp_can["remote_pref"] = cao.remote_pref
-						temp_can["office_only"] = cao.office_only
-						temp_can["some_in_office"] = cao.some_in_office
-						temp_can["nickname"] = cao.nickname
-						temp_can["current_position"] = cao.currently
-						temp_can["salary_req"] = cao.salary_req
-						temp_can["desired_work_location"] = cao.desired_work_location
-						temp_can["comments"] = cao.comments
-						temp_can["resume"] = can.documents
-						temp_can["references"] = can.references
-					except Exception as e:
-						print(e)
-						temp_can["location"] = can.location
-						temp_can["work_auth"] = can.work_auth
-						temp_can["remote_only"] = "Not Specified"
-						temp_can["remote_pref"] = "Not Specified"
-						temp_can["some_in_office"] = "Not Specified"
-						temp_can["office_only"] = "Not Specified"
-						temp_can["office_only"] = "Not Specified"
-						temp_can["office_only"] = "Not Specified"
-						temp_can['currency'] = can.currency
-						temp_can["salary_req"] = can.salaryRange
-						temp_can["desired_work_location"] = can.desired_work_location
-						temp_can["comments"] = can.comments
-						temp_can["resume"] = can.documents
-						temp_can["references"] = can.references
-					temp_can["candidate_id"] = can.candidate_id
-					temp_can["name"] = can.name
-					temp_can["email"] = can.email
-					temp_can["linkedin"] = can.skype_id
-					temp_can["last_name"] = can.last_name
-					temp_can["updated_at"] = can.updated_at
-					eval_objs = EvaluationComment.objects.filter(position=position_obj, candidate=can)
-					eval_data = []
-					for e in eval_objs:
-						t_data = {}
-						t_data["notes"] = e.notes
-						t_data["date"] = str(e.date)
-						t_data["position"] = e.position.position_title
-						t_data["given_by"] = e.given_by.user.get_full_name()
-						t_data["given_by_pic"] = e.given_by.profile_photo.url if e.given_by.profile_photo else None
-						eval_data.append(t_data)
-					temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
-					temp_can["eval_notes"] = eval_data
-					temp_can["offers"] = Offered.objects.filter(candidate_id=can.candidate_id).count()
-					temp_can["interviews_last_30"] = Interview.objects.filter(candidate=can).count()
-					if can.linkedin_data.get("profile_pic_url"):
-						temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
-					else:
-						temp_can["profile_photo"] = can.profile_photo
-					# get hire status
-					if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
-						temp_can['isHired'] = True
-					else:
-						temp_can['isHired'] = False
-						# Check Candidate Marks Code from here
-					# Get all scheduled interviews for the candidate
-					HM_vote = {}
-					members_list = position_obj.htms.all()
-					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id)
-					marks_by_htms = []
-					# for calculation avg marks
-					avg_marks_dict = {}
-					htms_total_weightages = {}
-					skill_scount = 1
-					for skill in position_obj.skillsets:
-						avg_marks_dict["init_qualify_ques_{}".format(skill_scount)] = 0
-						htms_total_weightages["htm_weightage_{}_total".format(skill_scount)] = 0
-						skill_scount += 1
-					for c_obj in candidate_marks_obj:
-						given_by = c_obj.marks_given_by
-						try:
-							htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
-							weightage_count = 1
-							for weightage in htm_weightage_obj.weightages:
-								htms_total_weightages["htm_weightage_{}_total".format(weightage_count)] += htm_weightage_obj.weightages[weightage]
-								# htms_total_weightages.append(htm_weightage_obj.weightages[weightage])
-						except Exception as e:
-							weightage_count = 1
-							for weightage in htm_weightage_obj.weightages:
-								htms_total_weightages["htm_weightage_{}_total".format(weightage_count)] += 10
-								# htms_total_weightages.append(10)
-					for c_obj in candidate_marks_obj:
-						given_by = c_obj.marks_given_by
-						marks_dict = {}
-						marks_dict["given_by"] = given_by
-						for k,v in c_obj.marks["marks"].items():
-							marks_dict[k] = v
-						marks_dict["question_answer"] = c_obj.marks["answers"]
-						marks_by_htms.append(marks_dict)
-						# for calculating avg marks
-						htm_weightage = {}
-						# htm_weightage = []
-						try:
-							htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
-							weightage_count = 1
-							for weightage in htm_weightage_obj.weightages:
-								htm_weightage[weightage] = htm_weightage_obj.weightages[weightage]
-								# htm_weightage.append(htm_weightage_obj.weightages[weightage])
-						except Exception as e:
-							weightage_count = 1
-							for weightage in htm_weightage_obj.weightages:
-								htm_weightage[weightage] = 10
-								# htm_weightage.append(10)
-						weightage_count = 0
-						for k in avg_marks_dict:
-							avg_marks_dict[k] = avg_marks_dict[k] + c_obj.marks[k] * htm_weightage[weightage_count]
-							weightage_count += 1
-					# Calculate avg marks
-					# if candidate_marks_obj:
-					# 	weightage_count = 0
-					# 	for k in avg_marks_dict:
-					# 		avg_marks_dict[k] = round(avg_marks_dict[k] / htms_total_weightages[weightage_count], 1)
-					# 		weightage_count += 1
-					# 	count = 0
-					# 	avg_marks = 0
-					# 	for k in avg_marks_dict:
-					# 		skillsets_count = 1
-					# 		if avg_marks_dict[k] not in [0, 0.0]:
-					# 			count = count + position_obj.skillsets[]
-					# 			avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_1'] * position_obj.init_qualify_ques_weightage_1
-					# 	if avg_marks_dict['init_qualify_ques_2'] not in [0, 0.0]:
-					# 		count = count + position_obj.init_qualify_ques_weightage_2
-					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_2'] * position_obj.init_qualify_ques_weightage_2
-					# 	if avg_marks_dict['init_qualify_ques_3'] not in [0, 0.0]:
-					# 		count = count + position_obj.init_qualify_ques_weightage_3
-					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_3'] * position_obj.init_qualify_ques_weightage_3
-					# 	if avg_marks_dict['init_qualify_ques_4'] not in [0, 0.0]:
-					# 		count = count + position_obj.init_qualify_ques_weightage_4
-					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_4'] * position_obj.init_qualify_ques_weightage_4
-					# 	if avg_marks_dict['init_qualify_ques_5'] not in [0, 0.0]:
-					# 		count = count + position_obj.init_qualify_ques_weightage_5
-					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_5'] * position_obj.init_qualify_ques_weightage_5
-					# 	if avg_marks_dict['init_qualify_ques_6'] not in [0, 0.0]:
-					# 		count = count + position_obj.init_qualify_ques_weightage_6
-					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_6'] * position_obj.init_qualify_ques_weightage_6
-					# 	if avg_marks_dict['init_qualify_ques_7'] not in [0, 0.0]:
-					# 		count = count + position_obj.init_qualify_ques_weightage_7
-					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_7'] * position_obj.init_qualify_ques_weightage_7
-					# 	if avg_marks_dict['init_qualify_ques_8'] not in [0, 0.0]:
-					# 		count = count + position_obj.init_qualify_ques_weightage_8
-					# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_8'] * position_obj.init_qualify_ques_weightage_8
-					# 	if count:
-					# 		temp_can['avg_marks'] = round(avg_marks / count, 1)
-					# 	else:
-					# 		temp_can['avg_marks'] = 0.0
-					# else:
-					# 	temp_can['avg_marks'] = 0.0
-					temp_can['avg_marks'] = 0.0
-					temp_can["marks_by_htms"] = marks_by_htms
-					candidate_data.append(temp_can)
-				except Exception as e:
-					print(e, "candidate")
-			candidate_data = sorted(candidate_data, key=lambda i: i['isHired'], reverse=True)
-			candidate_data = sorted(candidate_data, key=lambda i: i['avg_marks'], reverse=True)
-			data["candidates_data"] = candidate_data
-			response = {}
-			response['data'] = data
+				temp_can["profile_photo"] = can.profile_photo
+			# get hire status
+			if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
+				temp_can['isHired'] = True
+			else:
+				temp_can['isHired'] = False
+				# Check Candidate Marks Code from here
+			# Get all scheduled interviews for the candidate
+			HM_vote = {}
+			members_list = position_obj.htms.all()
+			candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id)
+			marks_by_htms = []
+			# for calculation avg marks
+			avg_marks_dict = []
+			total_weightages = []
+			for skill in position_obj.nskillsets:
+				temp_avg_skillset = {}
+				temp_avg_skillset["skillset_name"] = skill["skillset_name"]
+				temp_avg_skillset["skillset_marks"] = 0
+				avg_marks_dict.append(temp_avg_skillset)
 
-			return Response(response, status=status.HTTP_200_OK)
-		except Exception as e:
-			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+				temp_total_weightages = {}
+				temp_total_weightages["skillset_name"] = skill["skillset_name"]
+				temp_total_weightages["skillset_weightage"] = 0
+				total_weightages.append(temp_total_weightages)
+			print(avg_marks_dict)
+			print('--------------')
+			print(total_weightages)
+			# calculates total weightage of htms
+			for c_obj in candidate_marks_obj:
+				given_by = c_obj.marks_given_by
+				try:
+					# remove this
+					raise ValueError("This is awesome!!")
+					htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
+					weightage_count = 1
+					for idx in range(0, len(position_obj.nskillsets)):
+						total_weightages[idx]["skillset_weightage"] += htm_weightage_obj.weightages[idx]["skillset_weightage"]
+				except HTMAvailability.DoesNotExist:
+					for idx in range(0, len(position_obj.nskillsets)):
+						total_weightages[idx]["skillset_weightage"] += 10
+				except Exception as e:
+					print("some error occured while totaling weightages", str(e))
+					# remove this later
+					for idx in range(0, len(position_obj.nskillsets)):
+						total_weightages[idx]["skillset_weightage"] += 10
+			print("total weightages")
+			print(total_weightages)
+			
+			# part of avg marks calculation algo
+			for c_obj in candidate_marks_obj:
+				given_by = c_obj.marks_given_by
+				marks_dict = []
+				marks_dict["given_by"] = given_by
+				for k,v in c_obj.marks["marks"].items():
+					marks_dict[k] = v
+				marks_dict["question_answer"] = c_obj.marks["answers"]
+				marks_by_htms.append(marks_dict)
+				# for calculating avg marks
+				htm_weightage = {}
+				# htm_weightage = []
+				try:
+					htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
+					weightage_count = 1
+					for weightage in htm_weightage_obj.weightages:
+						htm_weightage[weightage] = htm_weightage_obj.weightages[weightage]
+						# htm_weightage.append(htm_weightage_obj.weightages[weightage])
+				except Exception as e:
+					weightage_count = 1
+					for weightage in htm_weightage_obj.weightages:
+						htm_weightage[weightage] = 10
+						# htm_weightage.append(10)
+				weightage_count = 0
+				for k in avg_marks_dict:
+					avg_marks_dict[k] = avg_marks_dict[k] + c_obj.marks[k] * htm_weightage[weightage_count]
+					weightage_count += 1
+			# Calculate avg marks
+			# if candidate_marks_obj:
+			# 	weightage_count = 0
+			# 	for k in avg_marks_dict:
+			# 		avg_marks_dict[k] = round(avg_marks_dict[k] / htms_total_weightages[weightage_count], 1)
+			# 		weightage_count += 1
+			# 	count = 0
+			# 	avg_marks = 0
+			# 	for k in avg_marks_dict:
+			# 		skillsets_count = 1
+			# 		if avg_marks_dict[k] not in [0, 0.0]:
+			# 			count = count + position_obj.skillsets[]
+			# 			avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_1'] * position_obj.init_qualify_ques_weightage_1
+			# 	if avg_marks_dict['init_qualify_ques_2'] not in [0, 0.0]:
+			# 		count = count + position_obj.init_qualify_ques_weightage_2
+			# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_2'] * position_obj.init_qualify_ques_weightage_2
+			# 	if avg_marks_dict['init_qualify_ques_3'] not in [0, 0.0]:
+			# 		count = count + position_obj.init_qualify_ques_weightage_3
+			# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_3'] * position_obj.init_qualify_ques_weightage_3
+			# 	if avg_marks_dict['init_qualify_ques_4'] not in [0, 0.0]:
+			# 		count = count + position_obj.init_qualify_ques_weightage_4
+			# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_4'] * position_obj.init_qualify_ques_weightage_4
+			# 	if avg_marks_dict['init_qualify_ques_5'] not in [0, 0.0]:
+			# 		count = count + position_obj.init_qualify_ques_weightage_5
+			# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_5'] * position_obj.init_qualify_ques_weightage_5
+			# 	if avg_marks_dict['init_qualify_ques_6'] not in [0, 0.0]:
+			# 		count = count + position_obj.init_qualify_ques_weightage_6
+			# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_6'] * position_obj.init_qualify_ques_weightage_6
+			# 	if avg_marks_dict['init_qualify_ques_7'] not in [0, 0.0]:
+			# 		count = count + position_obj.init_qualify_ques_weightage_7
+			# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_7'] * position_obj.init_qualify_ques_weightage_7
+			# 	if avg_marks_dict['init_qualify_ques_8'] not in [0, 0.0]:
+			# 		count = count + position_obj.init_qualify_ques_weightage_8
+			# 		avg_marks = avg_marks + avg_marks_dict['init_qualify_ques_8'] * position_obj.init_qualify_ques_weightage_8
+			# 	if count:
+			# 		temp_can['avg_marks'] = round(avg_marks / count, 1)
+			# 	else:
+			# 		temp_can['avg_marks'] = 0.0
+			# else:
+			# 	temp_can['avg_marks'] = 0.0
+			temp_can['avg_marks'] = 0.0
+			temp_can["marks_by_htms"] = marks_by_htms
+			candidate_data.append(temp_can)
+			# except Exception as e:
+			# 	print(str(e), "candidate")
+		candidate_data = sorted(candidate_data, key=lambda i: i['isHired'], reverse=True)
+		candidate_data = sorted(candidate_data, key=lambda i: i['avg_marks'], reverse=True)
+		data["candidates_data"] = candidate_data
+		response = {}
+		response['data'] = data
+
+		return Response(response, status=status.HTTP_200_OK)
+		# except Exception as e:
+		# 	return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)

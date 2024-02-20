@@ -190,6 +190,7 @@ class CandidateMarks(models.Model):
     suggestion_8 = models.TextField(null=True, blank=True, default="None")
 
     marks = models.JSONField(default=get_json_default)
+    nmarks = models.JSONField(default=get_listed_json_default)
 
     all_marks_given = models.BooleanField(default=False)
     thumbs_up = models.BooleanField(default=False)

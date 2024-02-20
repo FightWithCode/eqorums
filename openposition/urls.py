@@ -30,4 +30,9 @@ urlpatterns = [
         views.GetSingleOpenPosition.as_view(),
         name="get-open-positions",
     ),
+    path(
+        "get-all-opdata/<int:op_id>",
+        views.GetAllOPData.as_view(),
+        name="get-all-opdata"
+    ),
 ]
