@@ -502,9 +502,9 @@ class HiringMemberView(APIView):
 		try:
 			try:
 				client_id = int(request.query_params.get('client_id'))
-				hiring_member_objs = Profile.objects.filter(roles__contains="is_htm", client=client_id)
+				hiring_member_objs = Profile.objects.filter(Q(roles__contains="is_htm") | Q(roles__contains="is_sm"), client=client_id)
 			except:
-				hiring_member_objs = Profile.objects.filter(roles__contains="is_htm")
+				hiring_member_objs = Profile.objects.filter(Q(roles__contains="is_htm") | Q(roles__contains="is_sm"))
 			members_list = []
 			for i in hiring_member_objs:
 				temp_dict = {}
