@@ -512,6 +512,10 @@ class HiringMemberView(APIView):
 				temp_dict['name'] = i.user.get_full_name()
 				temp_dict["email"] = i.email
 				temp_dict["skills"] = "NA"
+				if "is_htm" in i.roles:
+					temp_dict["role"] = "Hiring Member"
+				elif "is_sm" in i.roles:
+					temp_dict["role"] = "Senior Manager"
 				temp_dict["interviews_done"] = "1/10"
 				members_list.append(temp_dict)
 			response = {}
