@@ -116,23 +116,6 @@ class OpenPositionView(APIView):
                 file = request.FILES[i]
                 PositionDoc.objects.create(openposition=position_obj, file=file)
             # add deadlines
-            # htm deadline object
-			# obj = [
-			# 	{
-			# 		"htm": 17, 
-			# 		"deadline": "2024-08-08", 
-			# 		"weightages": [
-			# 			{
-			# 				"skillset_name": "Awesome",
-			# 				"skillset_weightage": 10
-			# 			},
-			# 			{
-			# 				"skillset_name": "Truth",
-			# 				"skillset_weightage": 9
-			# 			}
-			# 		]
-			# 	}
-			# ]
             if not position_obj.drafted or position_obj.drafted == "False":
                 for deadline in json.loads(json.loads(request.data.get("htm_deadlines"))):
                     htm_prof = Profile.objects.get(id=int(deadline.get("htm")))
@@ -862,6 +845,7 @@ class GetSingleOpenPosition(APIView):
 				data["formated_target_deadline"] = position_obj.target_deadline.strftime("%B %d, %Y")
 			except Exception as e:
 				print(e)
+			data["skillsets"] = position_obj.nskillsets
 			response = {}
 			response['data'] = data
 			return Response(response, status=status.HTTP_200_OK)
