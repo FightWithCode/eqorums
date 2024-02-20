@@ -243,7 +243,7 @@ class OpenPositionView(APIView):
                 position_obj.drafted = True
             position_obj.currency = request.data.get('currency')
             position_obj.salary_range = request.data.get('salary_range')
-            position_obj.local_preference = request.data.get('local_preference')
+            position_obj.candidate_location = request.data.get('local_preference')
             position_obj.no_of_open_positions = request.data.get('no_of_open_positions')
             position_obj.updated_by = request.user
             position_obj.work_auth = request.data.get("work_auth")
