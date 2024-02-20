@@ -31,7 +31,6 @@ class OpenPosition(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     position_title = models.CharField(max_length=100)
     position_type = models.CharField(default="not sure", max_length=255)
-    reference = models.TextField(null=True, blank=True)
     special_intruction = models.TextField(null=True, blank=True)
 
     hiring_group = models.ForeignKey("hiringgroup.HiringGroup", on_delete=models.SET_NULL, null=True, blank=True)
@@ -82,8 +81,7 @@ class OpenPosition(models.Model):
     
     currency = models.CharField(max_length=10, default='$', blank=True, null=True)
     salary_range = models.CharField(max_length=255, default='NIL', null=True, blank=True)
-    local_preference = models.CharField(max_length=255, default='NIL', null=True, blank=True)
-    other_criteria = models.TextField(default='NIL', null=True, blank=True)
+    candidate_location = models.CharField(max_length=255, default='None', null=True, blank=True)
     disabled = models.BooleanField(default=False)
     no_of_open_positions = models.IntegerField(default=1, null=True, blank=True)
     filled = models.BooleanField(default=False)
