@@ -30,6 +30,7 @@ class OpenPosition(models.Model):
     position_id = models.CharField(default=None, max_length=25, null=True, blank=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     position_title = models.CharField(max_length=100)
+    position_type = models.CharField(default="not sure", max_length=255)
     reference = models.TextField(null=True, blank=True)
     special_intruction = models.TextField(null=True, blank=True)
 
@@ -49,6 +50,7 @@ class OpenPosition(models.Model):
     
     # Skillsets - each item contains {skillset_name:, skillset_weightage:, skillset_questions:[]}
     skillsets = models.JSONField(default=get_listed_json_default)
+    nskillsets = models.JSONField(default=get_listed_json_default)
     # init_qualify_ques_1 = models.CharField(max_length=255, null=True, blank=True)
     # init_qualify_ques_2 = models.CharField(max_length=255, null=True, blank=True)
     # init_qualify_ques_3 = models.CharField(max_length=255, default='NA', null=True, blank=True)
@@ -126,6 +128,7 @@ class HTMsDeadline(models.Model):
     open_position = models.ForeignKey("openposition.OpenPosition",  on_delete=models.CASCADE)
     htm = models.ForeignKey(Profile, on_delete=models.CASCADE)
     deadline = models.DateTimeField()
+    skillset_weightage = models.JSONField(default=get_json_default)
     color = models.CharField(max_length=10, default="#ff00aa", null=True, blank=True)
 
 

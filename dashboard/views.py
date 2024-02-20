@@ -88,7 +88,8 @@ from openposition.models import (
 	CandidateAssociateData,
 	CandidateStatus,
 	PositionDoc,
-	Offered
+	Offered,
+	HTMWeightage
 )
 from hiringgroup.models import HiringGroup
 from clients.serializers import ClientSerializer
@@ -104,7 +105,6 @@ from .models import (
 	AskedNotification,
 	Hired,
 	ScheduleTemplate,
-	HTMWeightage,
 	HTMAvailability,
 	APIData,
 	SelectedAnalyticsDashboard,
@@ -10541,6 +10541,7 @@ class GetAllOPData(APIView):
 				print(e)
 				data["hiring_group"] = {}
 			# get_candidate data
+			print(candidates_objs)
 			candidate_data = []
 			for can in candidates_objs:
 				print("in can")
@@ -10634,9 +10635,6 @@ class GetAllOPData(APIView):
 							for weightage in htm_weightage_obj.weightages:
 								htms_total_weightages["htm_weightage_{}_total".format(weightage_count)] += 10
 								# htms_total_weightages.append(10)
-					print(avg_marks_dict)
-					print("------------")
-					print(htms_total_weightages)
 					for c_obj in candidate_marks_obj:
 						given_by = c_obj.marks_given_by
 						marks_dict = {}
@@ -10663,8 +10661,6 @@ class GetAllOPData(APIView):
 						for k in avg_marks_dict:
 							avg_marks_dict[k] = avg_marks_dict[k] + c_obj.marks[k] * htm_weightage[weightage_count]
 							weightage_count += 1
-					print(marks_by_htms)
-					print(avg_marks_dict)
 					# Calculate avg marks
 					# if candidate_marks_obj:
 					# 	weightage_count = 0
