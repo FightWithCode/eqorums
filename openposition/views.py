@@ -794,6 +794,7 @@ class GetSingleOpenPosition(APIView):
 				temp_dict = {}
 				temp_dict["deadline"] = deadline.deadline.strftime("%m-%d-%Y")
 				temp_dict["htm"] = deadline.htm.id
+				temp_dict["weightages"] = deadline.skillset_weightage
 				htm_deadlines.append(temp_dict)
 			data["htm_deadlines"] = htm_deadlines
 			data['withdrawed_members'] = json.loads(data['withdrawed_members'])
