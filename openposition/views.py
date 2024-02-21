@@ -97,12 +97,12 @@ class OpenPositionView(APIView):
                 sourcing_deadline=sourcing_deadline,
                 target_deadline=target_deadline,
 
-                stages=request.data.get('stages', json.dumps([])),
+                stages=json.dumps([]),
 
                 final_round_completetion_date=request.data.get('final_round_completetion_date'),
 
-                skillsets=request.data.get("skillsets"),
-				nskillsets=request.data.get("skillsets"),
+                skillsets=json.loads(request.data.get("skillsets")),
+				nskillsets=(json.loadsrequest.data.get("skillsets")),
 
                 no_of_open_positions=request.data.get('no_of_open_positions'),
                 currency=request.data.get('currency'),
@@ -117,7 +117,7 @@ class OpenPositionView(APIView):
                 PositionDoc.objects.create(openposition=position_obj, file=file)
             # add deadlines
             if not position_obj.drafted or position_obj.drafted == "False":
-                for deadline in json.loads(json.loads(request.data.get("htm_deadlines"))):
+                for deadline in json.loads(request.data.get("htm_deadlines")):
                     htm_prof = Profile.objects.get(id=int(deadline.get("htm")))
                     position_obj.htms.add(htm_prof)
                     position_obj.save()
