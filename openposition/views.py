@@ -86,8 +86,6 @@ class OpenPositionView(APIView):
             else:
                 drafted = True
             
-            skillsets = get_skillsets_data(request.data)
-            
             position_obj = OpenPosition.objects.create(
                 client=client_obj,
                 position_title=request.data.get('position_title'),
@@ -102,7 +100,7 @@ class OpenPositionView(APIView):
                 final_round_completetion_date=request.data.get('final_round_completetion_date'),
 
                 skillsets=json.loads(request.data.get("skillsets")),
-				nskillsets=json.loads(request.data.get("skillsets")),
+    			nskillsets=json.loads(request.data.get("skillsets")),
 
                 no_of_open_positions=request.data.get('no_of_open_positions'),
                 currency=request.data.get('currency'),
