@@ -81,7 +81,7 @@ class OpenPositionView(APIView):
                 client_obj = Client.objects.get(id=int(request.data.get('client_id')))
             except:
                 return Response({'error': 'Client with id {} not found'.format(request.data.get('client_id'))}, status=status.HTTP_400_BAD_REQUEST)
-            if request.data.get('drafted') in ["false", "False", ""]:
+            if request.data.get('drafted') in ["false", "False", "", None]:
                 drafted = False
             else:
                 drafted = True
@@ -115,7 +115,7 @@ class OpenPositionView(APIView):
                 PositionDoc.objects.create(openposition=position_obj, file=file)
             # add deadlines
             if not position_obj.drafted or position_obj.drafted == "False":
-                for deadline in json.loads(request.data.get("htm_deadlines")):
+                for deadline in json.loads(request.data.get("htm_deadlines", "[]")):
                     htm_prof = Profile.objects.get(id=int(deadline.get("htm")))
                     position_obj.htms.add(htm_prof)
                     position_obj.save()
