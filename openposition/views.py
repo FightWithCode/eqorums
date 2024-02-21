@@ -97,12 +97,12 @@ class OpenPositionView(APIView):
                 sourcing_deadline=sourcing_deadline,
                 target_deadline=target_deadline,
 
-                stages=json.dumps([]),
+                stages=[],
 
                 final_round_completetion_date=request.data.get('final_round_completetion_date'),
 
                 skillsets=json.loads(request.data.get("skillsets")),
-				nskillsets=(json.loadsrequest.data.get("skillsets")),
+				nskillsets=json.loads(request.data.get("skillsets")),
 
                 no_of_open_positions=request.data.get('no_of_open_positions'),
                 currency=request.data.get('currency'),
