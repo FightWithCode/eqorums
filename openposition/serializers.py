@@ -95,7 +95,7 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 				try:
 					htm_obj = i
 					temp_dict["name"] = htm_obj.user.get_full_name()
-					temp_dict["profile_pic"] = htm_obj.profile_photo.url if  htm_obj.profile_photo else None
+					temp_dict["profile_pic"] = htm_obj.profile_photo.url if str(htm_obj.profile_photo) is not "None" else None
 					temp_dict["job_title"] = htm_obj.job_title
 					temp_dict["phone"] = htm_obj.phone_number
 					temp_dict["email"] = htm_obj.email

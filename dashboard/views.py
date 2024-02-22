@@ -264,7 +264,7 @@ class AccountManagerView(APIView):
 			response["phone_number"] = profile_obj.phone_number
 			response["skype_id"] = profile_obj.skype_id
 			response["email"] = profile_obj.email
-			response['profile_photo'] = profile_obj.profile_photo.url if profile_obj.profile_photo else None
+			response['profile_photo'] = profile_obj.profile_photo.url if str(profile_obj.profile_photo) is not "None" else None
 			clients_list = []
 			try:
 				for i in json.loads(profile_obj.client):
@@ -430,7 +430,7 @@ class HiringManagerView(APIView):
 			response["email"] = profile_obj.email
 			response["client"] = profile_obj.client
 			response["rankings"] = json.loads(profile_obj.rankings)
-			response["profile_photo"] = profile_obj.profile_photo.url if profile_obj.profile_photo else None
+			response["profile_photo"] = profile_obj.profile_photo.url if str(profile_obj.profile_photo) is not None else None
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -554,7 +554,7 @@ class GetAllHiringManagerView(APIView):
 				temp_dict["username"] = i.user.username
 				temp_dict["mobile_no"] = i.phone_number
 				temp_dict["email"] = i.email
-				temp_dict["profile_photo"] = i.profile_photo.url if i.profile_photo else None
+				temp_dict["profile_photo"] = i.profile_photo.url if str(i.profile_photo) is not None else None
 				if i.job_title:
 					temp_dict['job_title'] = i.job_title
 				else:
@@ -674,7 +674,7 @@ class LoginView(KnoxLoginView):
 				data.data['profile_photo'] = None
 		data.data['roles'] = user.profile.roles			
 		if "profile_photo" not in data.data: 
-			data.data['profile_photo'] = user_profile.profile_photo.url if user_profile.profile_photo else None
+			data.data['profile_photo'] = user_profile.profile_photo.url if str(user_profile.profile_photo) is not None else None
 		data.data['phone_number'] = user_profile.phone_number
 		data.data['email'] = user_profile.email
 		data.data['skype_id'] = user_profile.skype_id
@@ -698,7 +698,7 @@ class AllAccountManagers(APIView):
 				temp_dict["username"] = i.user.username
 				temp_dict["mobile_no"] = i.phone_number
 				temp_dict["email"] = i.email
-				temp_dict['profile_photo'] = i.profile_photo.url if i.profile_photo else None
+				temp_dict['profile_photo'] = i.profile_photo.url if str(i.profile_photo) is not "None" else None
 				data.append(temp_dict)
 			return Response(data, status=status.HTTP_200_OK)
 		except Exception as e:
@@ -8376,7 +8376,7 @@ class SeniorManagerView(APIView):
 			response['job_title'] = profile_obj.job_title
 			response["email"] = profile_obj.email
 			response["client_id"] = profile_obj.client
-			response['profile_photo']  = profile_obj.profile_photo.url if profile_obj.profile_photo else None
+			response['profile_photo']  = profile_obj.profile_photo.url if str(profile_obj.profile_photo) is not "None" else None
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
