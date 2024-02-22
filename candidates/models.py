@@ -39,7 +39,7 @@ class Candidate(models.Model):
     document = models.FileField(blank=True, null=True)
     documents = models.CharField(max_length=10000, default='[]')
     references = models.CharField(max_length=10000, default='[]')
-    profile_photo = models.CharField(max_length=500, default="None", null=True, blank=True)
+    profile_photo = models.CharField(max_length=500, default=None, null=True)
     temp_profile_photo = models.FileField(default=None, null=True, blank=True)
     interview_status = models.CharField(default='NotSet', null=True, blank=True, max_length=255)
     job_title = models.CharField(max_length=255, default="Not Specified",null=True, blank=True)
