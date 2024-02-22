@@ -292,7 +292,7 @@ class GetPositionSummary(APIView):
 					temp_dict["color"] = [d["color"] for d in hiring_group.members_color if d['htm'] == deadline.htm.id][0]
 				except Exception as e:
 					temp_dict["color"] = None
-				temp_dict["profile_pic"] = deadline.htm.profile_photo.url if str(deadline.htm.profile_photo) is not "None" else None 				
+				temp_dict["profile_pic"] = deadline.htm.profile_photo.url if str(deadline.htm.profile_photo) not in ["", "None", "null"] else None 				
 				htm_deadlines.append(temp_dict)
 			
 			if start and open_position.target_deadline:
@@ -940,7 +940,7 @@ class GetAllOPData(APIView):
 						t_data["date"] = str(e.date)
 						t_data["position"] = e.position.position_title
 						t_data["given_by"] = e.given_by.user.get_full_name()
-						t_data["given_by_pic"] = e.given_by.profile_photo.url if str(e.given_by.profile_photo) is not "None" else None
+						t_data["given_by_pic"] = e.given_by.profile_photo.url if str(e.given_by.profile_photo) not in ["", "None", "null"] else None
 						eval_data.append(t_data)
 					temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
 					temp_can["eval_notes"] = eval_data
