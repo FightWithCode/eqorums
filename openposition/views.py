@@ -440,6 +440,7 @@ class AllCandidateFeedback(APIView):
 			logged_user = request.user
 			logged_user_profile = Profile.objects.get(user=logged_user)
 			for i in data:
+				caobj = CandidateAssociateData.objects.get(open_position=open_position_obj, candidate__candidate_id=i["candidate_id"])
 				# Additin Profile Picture
 				if 'profile_pic_url' in i['linkedin_data'] and i['linkedin_data']['profile_pic_url'] and i['linkedin_data']['profile_pic_url'] != "null":
 					i['profile_photo'] = i['linkedin_data']['profile_pic_url']
@@ -459,14 +460,8 @@ class AllCandidateFeedback(APIView):
 					i['offered'] = False
 				# Getting withdrawed and requested data
 				i['op_id'] = op_id
-				if i['op_id'] in json.loads(i['withdrawed_op_ids']):
-					i['withdrawed'] = True
-				else:
-					i['withdrawed'] = False
-				if i['op_id'] in i["requested_op_ids"]:
-					i["requested"] = True
-				else:
-					i["requested"] = False
+				i['withdrawed'] = caobj.withdrawed if caobj.withdrawed else False
+				i["requested"] = caobj.accepted if caobj.accepted else False
 				i['client_id'] = open_position_obj.client
 				
 				if "is_htm" in logged_user_profile.roles and hiring_group_obj.hod_profile != request.user.profile and hiring_group_obj.hr_profile != request.user.profile:
@@ -479,13 +474,13 @@ class AllCandidateFeedback(APIView):
 						htm_weightage = htm_weightage_obj.skillset_weightage
 					except HTMsDeadline.DoesNotExist:
 						htm_weightage = []
-						for idx in range(0, len(position_obj.nskillsets)):
+						for idx in range(0, len(open_position_obj.nskillsets)):
 							htm_weightage.append({"skillset_weightage": 10})
 					except Exception as e:
 						print("some error occured while totaling weightages", str(e))
 						# remove this later
 						htm_weightage = []
-						for idx in range(0, len(position_obj.nskillsets)):
+						for idx in range(0, len(open_position_obj.nskillsets)):
 							htm_weightage.append({"skillset_weightage": 10})
 					if candidate_marks_obj:
 						avg_marks = 0
@@ -865,8 +860,6 @@ class GetAllOPData(APIView):
 			for j in PositionDoc.objects.filter(openposition__id=op_id):
 				docs.append(j.file.url)
 			data['documentations'] = docs
-			if "membes" in data:
-				print(data["members"])
 			candidates_objs = []
 			candidate_ids = []
 			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
@@ -892,6 +885,7 @@ class GetAllOPData(APIView):
 			data["special_intruction"] = "some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name"
 			# get_candidate data
 			candidate_data = []
+			print(candidates_objs)
 			for can in candidates_objs:
 				try:
 					temp_can = {}
