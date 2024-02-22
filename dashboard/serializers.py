@@ -23,6 +23,9 @@ from .models import (
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from candidates.models import Candidate
+# Utils imports
+from candidates.utils import get_candidate_profile
+
 
 class ChangePasswordSerializer(serializers.Serializer):
     model = User
@@ -337,10 +340,7 @@ class CandidateSerializer(serializers.ModelSerializer):
 		return CandidateMarks.objects.filter(candidate_id=instance.candidate_id, op_id=instance.candidate_id, thumbs_down=True).count()
 
 	def get_profile_photo(self, instance):
-		if 'profile_pic_url' in instance.linkedin_data and instance.linkedin_data['profile_pic_url'] and instance.linkedin_data['profile_pic_url'] != "null":
-			return instance.linkedin_data['profile_pic_url']
-		else:
-			return instance.profile_photo
+		return get_candidate_profile(instance)
 	
 	def get_is_withdrawn(self, obj):
 		if json.loads(obj.withdrawed_op_ids):

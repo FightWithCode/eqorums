@@ -6,47 +6,58 @@ import boto3
 import pytz
 import random
 import string
+import stripe
 import requests
 import ast
 import re
-from dashboard.iotum_utils import get_iotum_auth_code, create_meeting_room, get_host_and_create_meeting, end_meeting
+import os
 from time import time
 import jwt
 import json
 from allauth.account.signals import user_logged_in
 from datetime import datetime, timedelta
-import os
-from django.core import files
 from io import BytesIO
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+
+
+from django.core import files
 from django.db.models import F
 from django.db.models import Value as V
 
 
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-
 # Testing New Auth FLow
-import google.oauth2.credentials
-import google_auth_oauthlib.flow
+# Django imports
 from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.conf import settings 
 from django.core.mail import send_mail
-
-# Django Imports
-from rest_framework.views import APIView
 from django.contrib.auth import login
 from django.db.models import Count
 from django.db.models.functions import ExtractMonth, Concat
 from django.template import Context, Template
 from django.dispatch import receiver
-from rest_framework.response import Response
-from rest_framework import status
 from django.core.files.storage import FileSystemStorage
 from django.db.models import Avg
 from django.db.models import Q
 from django.utils.html import strip_tags
+from django.contrib.auth.models import User
+from django.template.loader import get_template
+from django.core.mail import EmailMultiAlternatives
+from django.core.mail.message import EmailMultiAlternatives as MessageEmailMultiAlternatives
+
+# DRF Imports
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework import permissions
+from rest_framework.generics import UpdateAPIView
+from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.permissions import IsAuthenticated
+
 # serializers import
 from openposition.serializers import (
 	OpenPositionSerializer
@@ -79,7 +90,16 @@ from .serializers import (
 	ExtraAccountsPriceSerializer,
 	BillingDetailSerializer,
 )
-from clients.models import Client, Package, ClientPackage
+
+from clients.serializers import ClientSerializer
+
+# Model import
+from clients.models import (
+	Client, 
+	Package, 
+	ClientPackage
+)
+
 from openposition.models import (
 	OpenPosition,
 	HTMsDeadline,
@@ -92,7 +112,6 @@ from openposition.models import (
 	HTMWeightage
 )
 from hiringgroup.models import HiringGroup
-from clients.serializers import ClientSerializer
 from .models import (
 	Profile,
 	PositionTitle,
@@ -120,17 +139,11 @@ from .models import (
 	StripeWebhookData
 )
 from candidates.models import Candidate
-from websockets.models import AppNotification
-from django.contrib.auth.models import User
-from django.template.loader import get_template
-from django.core.mail import EmailMultiAlternatives
-from django.core.mail.message import EmailMultiAlternatives as MessageEmailMultiAlternatives
+
 from ics import Calendar, Event
-from rest_framework import permissions
-from rest_framework.generics import UpdateAPIView
-from rest_framework.authtoken.serializers import AuthTokenSerializer
-from rest_framework.permissions import IsAuthenticated
 from knox.views import LoginView as KnoxLoginView
+
+# Utils import
 from . import tasks
 from .utils import (
 	get_openposition_data,
@@ -150,7 +163,13 @@ from .utils import (
 from demo.aws_utils import (
 	delete_image
 )
-import stripe
+from candidates.utils import (
+	get_candidate_profile, 
+	get_candidate_profile_by_id
+)
+from dashboard.iotum_utils import get_iotum_auth_code, create_meeting_room, get_host_and_create_meeting, end_meeting
+
+
 stripe.api_key = settings.STRIPE_SECRET_KEY
 from dashboard.stripe_utils import get_or_create_stripe_customer, create_price, create_subscription, get_payment_method
 from dashboard.pdf_utils import generate_pdf
@@ -666,12 +685,7 @@ class LoginView(KnoxLoginView):
 			data.data['linkedin_first_name'] = candidate_obj.linkedin_first_name
 			data.data['linkedin_last_name'] = candidate_obj.linkedin_last_name
 			data.data['alernate_email'] = candidate_obj.alernate_email
-			if candidate_obj.profile_photo:
-				data.data['profile_photo'] = candidate_obj.profile_photo
-			elif "profile_pic_url" in candidate_obj.linkedin_data and candidate_obj.linkedin_data['profile_pic_url'] != "null":
-				data.data['profile_photo'] = candidate_obj.linkedin_data["profile_pic_url"]
-			else:
-				data.data['profile_photo'] = None
+			data.data['profile_photo'] = get_candidate_profile(candidate_obj)
 		data.data['roles'] = user.profile.roles			
 		if "profile_photo" not in data.data: 
 			data.data['profile_photo'] = user_profile.profile_photo.url if str(user_profile.profile_photo) not in ["", "None", "null"] else None
@@ -3036,10 +3050,7 @@ class CandidateFeedback(APIView):
 					i['position_specific_data'] = {}
 					i['position_specific_data_error'] = str(e)
 				# Additin Profile Picture
-				if 'profile_pic_url' in i['linkedin_data'] and i['linkedin_data']['profile_pic_url'] and i['linkedin_data']['profile_pic_url'] != "null":
-					i['profile_photo'] = i['linkedin_data']['profile_pic_url']
-				else:
-					i['profile_photo'] = i['profile_photo']
+				i['profile_photo'] = get_candidate_profile(cad.candidate)
 				i['documents'] = json.loads(i['documents'])
 				i['init_qualify_ques_1'] = open_position_obj.init_qualify_ques_1
 				i['init_qualify_ques_2'] = open_position_obj.init_qualify_ques_2
@@ -3620,10 +3631,7 @@ class AllCandidateFeedback(APIView):
 			logged_user_profile = Profile.objects.get(user=logged_user)
 			for i in data:
 				# Additin Profile Picture
-				if 'profile_pic_url' in i['linkedin_data'] and i['linkedin_data']['profile_pic_url'] and i['linkedin_data']['profile_pic_url'] != "null":
-					i['profile_photo'] = i['linkedin_data']['profile_pic_url']
-				else:
-					i['profile_photo'] = i['profile_photo']
+				i['profile_photo'] = get_candidate_profile_by_id(i["candidate+_id"])
 				# Getting if hired or not
 				try:
 					hire_obj = Hired.objects.get(candidate_id=i['candidate_id'], op_id=op_id)
@@ -4660,10 +4668,7 @@ class CandidateBasicDetailView(APIView):
 			response['nickname'] = candidate_obj.nickname
 			response['last_name'] = candidate_obj.last_name
 			response['email'] = candidate_obj.email
-			if 'profile_pic_url' in candidate_obj.linkedin_data and candidate_obj.linkedin_data['profile_pic_url'] and candidate_obj.linkedin_data["profile_pic_url"] != "null":
-				response['profile_photo'] = candidate_obj.linkedin_data['profile_pic_url']
-			else:
-				response['profile_photo'] = candidate_obj.profile_photo
+			response['profile_photo'] = get_candidate_profile(candidate_obj)
 			response['profile_photo'] = candidate_obj.profile_photo
 			response['phone_number'] = candidate_obj.phone_number
 			response['skype_id'] = candidate_obj.skype_id
@@ -5141,10 +5146,7 @@ class GetCandidateDocs(APIView):
 		try:
 			candidate_obj = Candidate.objects.get(candidate_id=candidate_id)
 			response = {}
-			if 'profile_pic_url' in candidate_obj.linkedin_data and candidate_obj.linkedin_data['profile_pic_url'] and candidate_obj.linkedin_data['profile_pic_url'] != "null":
-				response['profile_photo'] = candidate_obj.linkedin_data['profile_pic_url']
-			else:
-				response['profile_photo'] = candidate_obj.profile_phot
+			response['profile_photo'] = get_candidate_profile(candidate_obj)
 			if candidate_obj.uploaded_docs == 'None':
 				response['uploaded_docs'] = 'None'
 			else:
@@ -5179,10 +5181,7 @@ class AllCandidateDataView(APIView):
 				temp_dict['status'] = 'Open'
 				temp_dict['phone'] = i.phone_number
 				temp_dict['email'] = i.email
-				if 'profile_pic_url' in i.linkedin_data and i.linkedin_data['profile_pic_url'] and i.linkedin_data['profile_pic_url'] != "null":
-					temp_dict['profile_photo'] = i.linkedin_data['profile_pic_url']
-				else:
-					temp_dict['profile_photo'] = i.profile_photo
+				temp_dict['profile_photo'] = get_candidate_profile(i)
 				temp_dict['current_position'] = i.job_title
 				temp_dict['location'] = i.location
 				temp_dict['skillsets'] = i.skillsets
@@ -5190,7 +5189,6 @@ class AllCandidateDataView(APIView):
 				temp_dict['currency'] = i.currency
 				temp_dict['salaryRange'] = i.salaryRange
 				temp_dict['desired_work_location'] = i.desired_work_location
-				# temp_dict['profile_pic_url'] = i.linkedin_data.get('profile_pic_url')
 				overallscore = 0
 				for j in CandidateMarks.objects.filter(candidate_id=i.candidate_id):
 					avg_marks = (j.criteria_1_marks + j.criteria_2_marks + j.criteria_3_marks + j.criteria_4_marks + j.criteria_5_marks + j.criteria_6_marks + j.criteria_7_marks + j.criteria_8_marks) / 8
@@ -5246,11 +5244,7 @@ class GetCandidatesToAssociateView(APIView):
 				temp_dict['currency'] = i.currency
 				temp_dict['salaryRange'] = i.salaryRange
 				temp_dict['linkedin_data'] = i.linkedin_data
-				if 'profile_pic_url' in i.linkedin_data and i.linkedin_data['profile_pic_url'] and i.linkedin_data['profile_pic_url'] != "null":
-					temp_dict['profile_photo'] = i.linkedin_data['profile_pic_url']
-					# response['profile_pic_url'] = i.linkedin_data['profile_pic_url']
-				else:
-					temp_dict['profile_photo'] = i.profile_photo
+				temp_dict['profile_photo'] = get_candidate_profile(i)
 				overallscore = 0
 				for j in CandidateMarks.objects.filter(candidate_id=i.candidate_id):
 					avg_marks = (j.criteria_1_marks + j.criteria_2_marks + j.criteria_3_marks + j.criteria_4_marks + j.criteria_5_marks + j.criteria_6_marks + j.criteria_7_marks + j.criteria_8_marks) / 8
@@ -5582,118 +5576,6 @@ class SearchCandidateView(APIView):
 					candidate_data = sorted(candidate_data, key=lambda i: i['pass_counts'], reverse=True)
 				elif sort_by ==  "pass-lth":
 					candidate_data = sorted(candidate_data, key=lambda i: i['pass_counts'])
-			# candidate_list = []
-			# position_objs = OpenPosition.objects.filter(position_title__icontains=job_title)
-			# for i in position_objs:
-			# 	client_obj = Client.objects.get(id=i.client)
-			# 	print("open position:", i)
-			# 	print(candidate_name)
-			# 	for j in Candidate.objects.filter(name__icontains=candidate_name):
-			# 		if i.id in json.loads(j.associated_op_ids):
-			# 			print("found candidate off this pos")
-			# 			temp_dict = {}
-			# 			if j.last_name == None or j.last_name == "Last Name":
-			# 				temp_dict['name'] = j.name
-			# 			else:
-			# 				temp_dict['name'] = "{} {}".format(j.name, j.last_name)
-			# 			temp_dict['candidate_id'] = j.candidate_id
-			# 			temp_dict['phone'] = j.phone_number
-			# 			temp_dict['email'] = j.email
-			# 			temp_dict['op_id'] = i.id
-			# 			temp_dict['job_title'] = i.position_title
-			# 			temp_dict['date'] = i.final_round_completetion_date
-			# 			temp_dict['client_id'] = i.client
-			# 			temp_dict['client'] = client_obj.company_name
-			# 			# temp_dict['profile_photo'] = j.profile_photo
-			# 			if 'profile_pic_url' in j.linkedin_data and j.linkedin_data['profile_pic_url']:
-			# 				temp_dict['profile_photo'] = j.linkedin_data['profile_pic_url']
-			# 			else:
-			# 				temp_dict['profile_photo'] = j.profile_photo
-			# 			try:
-			# 				candidate_status = CandidateStatus.objects.get(candidate_id=j.candidate_id)
-			# 				temp_dict['shortlist_status'] = candidate_status.shortlist_status
-			# 				temp_dict['make_offer_status'] = candidate_status.make_offer_status
-			# 				temp_dict['finall_selection_status'] = candidate_status.finall_selection_status
-			# 			except Exception as e:
-			# 				print(e)
-			# 				# response['status_error'] = str(e)
-			# 				temp_dict['shortlist_status'] = False
-			# 				temp_dict['make_offer_status'] = False
-			# 				temp_dict['finall_selection_status'] = False
-			# 			candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=j.candidate_id, op_id=i.id)
-			# 			overallscore = 0
-			# 			if candidate_marks_obj:
-			# 				for k in CandidateMarks.objects.filter(candidate_id=j.candidate_id):
-			# 					avg_marks = (k.criteria_1_marks + k.criteria_2_marks + k.criteria_3_marks + k.criteria_4_marks + k.criteria_5_marks + k.criteria_6_marks + k.criteria_7_marks + k.criteria_8_marks) / 8
-			# 					overallscore = overallscore + avg_marks
-			# 				temp_dict['overallscore'] = overallscore / candidate_marks_obj.count()
-			# 			else:
-			# 				temp_dict['overallscore'] = 0
-			# 			thumbs_up = 0
-			# 			thumbs_down = 0
-			# 			hold = 0
-			# 			for k in candidate_marks_obj:
-			# 				if k.thumbs_up or k.golden_gloves:
-			# 					thumbs_up = thumbs_up + 1
-			# 				if k.thumbs_down:
-			# 					thumbs_down = thumbs_down + 1
-			# 				if k.hold:
-			# 					hold = hold + 1
-			# 			if voting in ['pass', 'offer', 'hold']:
-			# 				if (thumbs_up >= thumbs_down) and (thumbs_up >= hold):
-			# 					temp_dict['vote'] = 'Offer'
-			# 					if voting == 'offer':
-			# 						candidate_list.append(temp_dict)
-			# 						continue
-			# 				elif (thumbs_down >= thumbs_up) and (thumbs_down >= hold):
-			# 					temp_dict['vote'] = 'Pass'
-			# 					if voting == 'pass':
-			# 						candidate_list.append(temp_dict)
-			# 						continue
-			# 				else:
-			# 					temp_dict['vote'] = 'Hold'
-			# 					if voting == 'hold':
-			# 						candidate_list.append(temp_dict)
-			# 						continue
-			# 			else:
-			# 				candidate_list.append(temp_dict)
-			# remove_candidates = []
-			# for i in candidate_list:
-			# 	try:
-			# 		candidate_status = CandidateStatus.objects.get(candidate_id=i['candidate_id'])
-			# 	except Exception as e:
-			# 		print(e)
-			# 		continue
-			# 	if shortlist_status is not None:
-			# 		if (shortlist_status and candidate_status.shortlist_status) or (shortlist_status is False and candidate_status.shortlist_status is False):
-			# 			pass
-			# 		else:
-			# 			try:
-			# 				remove_candidates.append(i)
-			# 			except:
-			# 				pass
-			# 	if offer_status is not None:
-			# 		if (offer_status and candidate_status.offer_status) or (offer_status is False and candidate_status.offer_status is False):
-			# 			pass
-			# 		else:
-			# 			try:
-			# 				remove_candidates.append(i)
-			# 			except:
-			# 				pass
-			# 	if final_selection is not None:
-			# 		if (final_selection and candidate_status.final_selection) or (final_selection is False and candidate_status.final_selection is False):
-			# 			pass
-			# 		else:
-			# 			try:
-			# 				remove_candidates.append(i)
-			# 			except:
-			# 				pass
-			# print(candidate_list)
-			# for i in remove_candidates:
-			# 	try:
-			# 		candidate_list.remove(i)
-			# 	except:
-			# 		pass
 			response['data'] = candidate_data
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
@@ -8525,12 +8407,7 @@ class UserProfileAPI(APIView):
 			if profile_obj.is_candidate:
 				try:
 					candidate_obj = Candidate.objects.get(email=profile_obj.email)
-					if candidate_obj.profile_photo:
-						response['profile_photo'] = candidate_obj.profile_photo
-					elif "profile_pic_url" in candidate_obj.linkedin_data and candidate_obj.linkedin_data['profile_pic_url'] != "null":
-						response['profile_photo'] = candidate_obj.linkedin_data["profile_pic_url"]
-					else:
-						response['profile_photo'] = 'None'
+					response['profile_photo'] = get_candidate_profile(candidate_obj)
 				except Exception as e:
 					print(e)
 					response['profile_photo'] = profile_obj.profile_photo
@@ -8705,8 +8582,7 @@ class GetLinkedinData(APIView):
 						uploaded_profile_photo = p_fs.url(profile_filename)
 					else:
 						uploaded_profile_photo = None
-					# response['profile_pic_url'] = uploaded_profile_photo
-					response['profile_photo'] = uploaded_profile_photo
+					# response['profile_photo'] = uploaded_profile_photo
 					response['about'] = data['summary']
 					response['references'] = data['recommendations']
 					response['first_name'] = data['first_name']
@@ -9604,7 +9480,7 @@ class GetCHSM3(APIView):
 			client_admin_dict['name'] = client_admin.user.first_name + ' ' + client_admin.user.last_name
 			client_admin_dict['email'] = client_admin.email
 			client_admin_dict['role'] = "Client Admin"
-			client_admin_dict['profile_picture'] = client_admin.profile_photo
+			client_admin_dict['profile_picture'] = client_admin.profile_photo.url if str(client_admin.profile_photo) not in ["None", "null", ""] else None
 			data.append(client_admin_dict)
 			for group in hiring_groups:
 				try:
@@ -9614,7 +9490,7 @@ class GetCHSM3(APIView):
 					temp_dict['name'] = hm_profile.user.first_name + ' ' + hm_profile.user.last_name
 					temp_dict['email'] = hm_profile.email
 					temp_dict['role'] = "Hiring Manager"
-					temp_dict['profile_picture'] = hm_profile.profile_photo
+					temp_dict['profile_picture'] = hm_profile.profile_photo.url if str(hm_profile.profile_photo) not in ["None", "null", ""] else None
 					if hm_profile.id not in duplicates:
 						data.append(temp_dict)
 						duplicates.append(hm_profile.id)
@@ -9626,7 +9502,7 @@ class GetCHSM3(APIView):
 				temp_dict['name'] = sm_profile.user.first_name + ' ' + sm_profile.user.last_name
 				temp_dict['email'] = sm_profile.email
 				temp_dict['role'] = "Senior Manager"
-				temp_dict['profile_picture'] = sm_profile.profile_photo
+				temp_dict['profile_picture'] = sm_profile.profile_photo.url if str(sm_profile.profile_photo) not in ["None", "null", ""] else None
 				if sm_profile.id not in duplicates:
 					data.append(temp_dict)
 					duplicates.append(sm_profile.id)
@@ -9933,7 +9809,7 @@ class GetPositionSummary(APIView):
 					temp_dict["color"] = [d["color"] for d in hiring_group.members_color if d['htm'] == deadline.htm.id][0]
 				except Exception as e:
 					temp_dict["color"] = None
-				temp_dict["profile_pic"] = deadline.htm.profile_photo				
+				temp_dict["profile_pic"] = deadline.htm.profile_photo.url if str(deadline.htm.profile_photo) not in ["None", "null", ""] else None				
 				htm_deadlines.append(temp_dict)
 			
 			if start and open_position.target_deadline:
@@ -9989,10 +9865,10 @@ class GetPositionSummary(APIView):
 						if d['deadline'] == start.strftime("%Y-%m-%d"):
 							if ("is_htm" in request.user.profile.roles) and request.user.profile not in [hiring_group.hod_profile, hiring_group.hr_profile]:
 								if request.user.profile.id == d["htm"]:
-									temp_dict = {"htmId": d["htm"], "htmProfPic": d["profile_pic"], "htmColorCode": d["color"]}
+									temp_dict = {"htmId": d["htm"], "htmProfPic": d["profile_pic"] if d["profile_pic"] not in ["None", "null", "", None] else None, "htmColorCode": d["color"]}
 									deadlines.append(temp_dict)
 							else:
-								temp_dict = {"htmId": d["htm"], "htmProfPic": d["profile_pic"], "htmColorCode": d["color"]}
+								temp_dict = {"htmId": d["htm"], "htmProfPic": d["profile_pic"] if d["profile_pic"] not in ["None", "null", "", None] else None, "htmColorCode": d["color"]}
 								deadlines.append(temp_dict)
 					temp_dict = {
 						"background": bg_color,
@@ -10016,7 +9892,7 @@ class GetPositionSummary(APIView):
 					member_dict['id'] = profile.id
 					member_dict['job_title'] = profile.job_title
 					member_dict['name'] = profile.user.first_name + ' ' + profile.user.last_name
-					member_dict['profile_pic'] = profile.profile_photo
+					member_dict['profile_pic'] = profile.profile_photo.url if str(profile.profile_photo) in not ["", "None", "null"] else None
 					if profile==hiring_group.hod_profile:
 						member_dict['isHod'] = True
 						member_dict['role'] = "Hiring Manager"

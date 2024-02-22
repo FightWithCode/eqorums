@@ -56,7 +56,7 @@ class Profile(models.Model):
     color = models.CharField(max_length=10, default="#ff00aa")
     rankings = models.JSONField(default=get_listed_json_default) # Works same as JOSNField using import json
     tnc_accepted = models.BooleanField(default=False)
-    profile_photo = models.FileField(default=None, null=True, blank=True, upload_to="profiles")
+    profile_photo = models.FileField(default=None, null=True, upload_to="profiles")
 
     notification_data = models.JSONField(default=[])
     # For CA to check if its their first log to show form or to not.

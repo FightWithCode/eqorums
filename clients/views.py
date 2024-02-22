@@ -249,7 +249,7 @@ class SingleClientDataView(APIView):
 			response["client"].update(ca_data)
 			try:
 				ca_user = User.objects.get(username=client_obj.key_username)
-				response['client']['ca_profile_pic'] = ca_user.profile.profile_photo
+				response['client']['ca_profile_pic'] = ca_user.profile.profile_photo.url if ca_user.profile.profile_photo else None
 			except:
 				response['client']['ca_profile_pic'] = None
 			try:

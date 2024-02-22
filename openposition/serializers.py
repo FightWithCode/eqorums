@@ -11,7 +11,6 @@ from openposition.models import (
 	HTMsDeadline,
 	CandidateMarks,
 	Hired,
-	HTMsDeadline,
 	Interview,
 	PositionDoc
 )
@@ -92,6 +91,10 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 						temp_dict["percentageCompletion"] = round(interview_taken / candidates_obj * 100)
 					else:
 						temp_dict["percentageCompletion"] = 0
+					temp_dict["weightage"] = deadline.first().skillset_weightage
+				else:
+					temp_dict["percentageCompletion"] = 0
+					temp_dict["wightage"] = None
 				try:
 					htm_obj = i
 					temp_dict["name"] = htm_obj.user.get_full_name()
@@ -115,7 +118,6 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 					temp_dict['is_withdrawed'] = True
 				else:
 					temp_dict['is_withdrawed'] = False
-				data.append(temp_dict)
 			return data
 		except Exception as e:
 			return []
