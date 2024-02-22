@@ -23,7 +23,7 @@ urlpatterns = [
     path(
         "all-candidate-feedback/<int:op_id>",
         views.AllCandidateFeedback.as_view(),
-        name="candidate-feedback",
+        name="all-candidate-feedback",
     ),
     path(
         "get-open-positions/<int:op_id>",
