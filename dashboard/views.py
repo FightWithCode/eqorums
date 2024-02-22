@@ -9892,7 +9892,7 @@ class GetPositionSummary(APIView):
 					member_dict['id'] = profile.id
 					member_dict['job_title'] = profile.job_title
 					member_dict['name'] = profile.user.first_name + ' ' + profile.user.last_name
-					member_dict['profile_pic'] = profile.profile_photo.url if str(profile.profile_photo) in not ["", "None", "null"] else None
+					member_dict['profile_pic'] = profile.profile_photo.url if str(profile.profile_photo) is not ["", "None", "null"] else None
 					if profile==hiring_group.hod_profile:
 						member_dict['isHod'] = True
 						member_dict['role'] = "Hiring Manager"
