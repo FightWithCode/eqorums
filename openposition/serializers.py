@@ -118,6 +118,7 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 					temp_dict['is_withdrawed'] = True
 				else:
 					temp_dict['is_withdrawed'] = False
+				data.append(temp_dict)
 			return data
 		except Exception as e:
 			return []

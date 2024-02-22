@@ -865,6 +865,8 @@ class GetAllOPData(APIView):
 			for j in PositionDoc.objects.filter(openposition__id=op_id):
 				docs.append(j.file.url)
 			data['documentations'] = docs
+			if "membes" in data:
+				print(data["members"])
 			candidates_objs = []
 			candidate_ids = []
 			for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
@@ -891,7 +893,6 @@ class GetAllOPData(APIView):
 			# get_candidate data
 			candidate_data = []
 			for can in candidates_objs:
-				print("in can")
 				try:
 					temp_can = {}
 					temp_can["associated_data"] = {}
