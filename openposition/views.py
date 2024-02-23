@@ -228,7 +228,7 @@ class OpenPositionView(APIView):
             # add deadlines
             try:
                 HTMsDeadline.objects.filter(open_position=position_obj).delete()
-                for deadline in json.loads(json.loads(request.data.get("htm_deadlines"))):
+                for deadline in json.loads(request.data.get("htm_deadlines", "[]")):
                     htm_prof = Profile.objects.get(id=int(deadline.get("htm")))
                     position_obj.htms.add(htm_prof)
                     position_obj.save()
