@@ -87,13 +87,15 @@ def get_htm_flag_data(htm_profile, op_id, candidate_id):
 		if hm_marks_obj.golden_gloves:
 			temp_dict['flag'] = 'Golden Glove'
 	else:
+		print("in else")
 		temp_dict['flag'] = 'Not Given'
 		try:
 			interview_obj = Interview.objects.filter(op_id__id=op_id, htm__in=[htm_profile], candidate__candidate_id=candidate_id)[0]
 			extra_data = get_htm_specific_data(interview_obj, htm_profile)
+			print(extra_data)
 			temp_dict.update(extra_data)
-		except:
-			pass
+		except Exception as e:
+			print(e, htm_profile.user.get_full_name(), candidate_id)
 	return temp_dict
 
 
