@@ -12,7 +12,8 @@ from openposition.models import (
 	CandidateMarks,
 	Hired,
 	Interview,
-	PositionDoc
+	PositionDoc,
+	CandidateAssociateData
 )
 from candidates.models import (
 	Candidate
@@ -138,17 +139,10 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 	def get_position_completion(self, obj):
 		try:
 			data = {}
-			group_obj = HiringGroup.objects.get(group_id=obj.hiring_group)
-			members = list(group_obj.members_list.all())
-			if group_obj.hr_profile in members:
-				try:
-					members.remove(group_obj.hr_profile)
-				except:
-					pass
+			members = obj.htms.all()
 			candidates_obj = 0
-			for k in Candidate.objects.all():
-				if obj.id in json.loads(k.associated_op_ids):
-					candidates_obj += 1
+			for cao in CandidateAssociateData.objects.filter(open_position=obj, accepted=True, withdrawed=False):
+				candidates_obj += 1
 			oldest_deadline = None
 			interview_taken = 0
 			total_interview = 0
@@ -168,5 +162,6 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 			else:
 				data["percentageCompletion"] = 0
 			return data
-		except:
+		except Exception as e:
+			print(e, '-----------------')
 			return {"percentageCompletion": 0}
