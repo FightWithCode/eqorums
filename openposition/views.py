@@ -443,20 +443,9 @@ class AllCandidateFeedback(APIView):
 				temp_can['withdrawed'] = cao.withdrawed if cao.withdrawed else False
 				temp_can["requested"] = cao.accepted if cao.accepted else False
 				temp_can['client_id'] = open_position_obj.client
-				candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
-				given_by = candidate_marks_obj.marks_given_by
-
-
-			for i in data:
-				caobj = CandidateAssociateData.objects.get(open_position=open_position_obj, candidate__candidate_id=i["candidate_id"])
-				# Additin Profile Picture
-				
-				
 				if "is_htm" in logged_user_profile.roles:
-					# Sending data as a HTM perspective
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
-					given_by = logged_user_profile.id
-					# Get weighage of the HTM if not found then assign 10 by default - Not being used
+					given_by = candidate_marks_obj.marks_given_by
 					try:
 						htm_weightage_obj = HTMsDeadline.objects.get(open_position=open_position_obj, htm__id=given_by)
 						htm_weightage = htm_weightage_obj.skillset_weightage
@@ -470,6 +459,33 @@ class AllCandidateFeedback(APIView):
 						htm_weightage = []
 						for idx in range(0, len(open_position_obj.nskillsets)):
 							htm_weightage.append({"skillset_weightage": 10})
+					if candidate_marks_obj:
+						temp_can["marks"] = candidate_marks_obj[0]
+					# continue this later
+				else:
+					# data for the CA, SMs and SA
+					candidate_schedule_list = []
+					for interview in Interview.objects.filter(candidate=cao.candidate, op_id__id=op_id).filter(disabled=False):
+						try:
+							temp_dict = {}
+							interviewers_names = interview.htm.all().values_list("user__first_name", flat=True)
+							temp_dict['interviewer_name'] = ", ".join(interviewers_names)
+							temp_dict['time'] = interview.interview_date_time.strftime("%m/%d/%Y, %H:%M:%S")
+							candidate_schedule_list.append(temp_dict)
+						except:
+							continue
+					temp_can['candidate_schedule'] = candidate_schedule_list
+			for i in data:
+				caobj = CandidateAssociateData.objects.get(open_position=open_position_obj, candidate__candidate_id=i["candidate_id"])
+				# Additin Profile Picture
+				
+				
+				if "is_htm" in logged_user_profile.roles:
+					# Sending data as a HTM perspective
+					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
+					given_by = logged_user_profile.id
+					# Get weighage of the HTM if not found then assign 10 by default - Not being used
+					
 					if candidate_marks_obj:
 						avg_marks = 0
 						count = 0
@@ -557,17 +573,6 @@ class AllCandidateFeedback(APIView):
 				else:
 					# Sending data as HM, HR, SM, CA or SA
 					# Get all scheduled interviews for the candidate
-					candidate_schedule_list = []
-					for interview in Interview.objects.filter(candidate__candidate_id=i["candidate_id"], op_id__id=op_id).filter(disabled=False):
-						try:
-							temp_dict = {}
-							interviewers_names = interview.htm.all().values_list("user__first_name", flat=True)
-							temp_dict['interviewer_name'] = ", ".join(interviewers_names)
-							temp_dict['time'] = interview.interview_date_time.strftime("%m/%d/%Y, %H:%M:%S")
-							candidate_schedule_list.append(temp_dict)
-						except:
-							continue
-					i['candidate_schedule'] = candidate_schedule_list
 					HM_vote = {}
 					members_list = open_position_obj.htms.all().values_list("id", flat=True)
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by__in=members_list)
@@ -772,11 +777,6 @@ class GetSingleOpenPosition(APIView):
 					except:
 						pass
 				delta = position_obj.target_deadline - now
-				for stage in data['stages']:
-					if 'completed' in stage:
-						pass
-					else:
-						stage['completed'] = False
 				if delta.days < 0 and position_obj.target_deadline == False:
 					data['deadline'] = True
 				
