@@ -477,7 +477,8 @@ class AllCandidateFeedback(APIView):
 							continue
 					temp_can['candidate_schedule'] = candidate_schedule_list
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=cao.candidate_id, op_id=op_id)
-					marks_by_htms = []
+					"""
+					uncomment from here if avg marks is needed
 					# for calculation avg marks
 					avg_marks = []
 					total_weightages = []
@@ -512,7 +513,6 @@ class AllCandidateFeedback(APIView):
 					# part of avg marks calculation algo
 					for c_obj in candidate_marks_obj:
 						given_by = c_obj.marks_given_by
-						marks_by_htms.append(c_obj.nmarks)
 						# for calculating avg marks
 						try:
 							htm_weightage_obj = HTMsDeadline.objects.get(open_position=open_position_obj, htm__id=given_by)
@@ -529,8 +529,6 @@ class AllCandidateFeedback(APIView):
 								htm_weightage.append({"skillset_weightage": 10})
 						for count in range(0, len(open_position_obj.nskillsets)):
 							avg_marks[count]["skillset_marks"] += c_obj.nmarks[count]["skillset_marks"] * htm_weightage[count]["skillset_weightage"]
-					print("avg marks after initial cal")
-					print(avg_marks)
 					# Calculate avg marks
 					if candidate_marks_obj:
 						overall_avg_marks = 0
@@ -546,7 +544,21 @@ class AllCandidateFeedback(APIView):
 							temp_can['avg_marks'] = 0.0
 					else:
 						temp_can['avg_marks'] = 0.0
-					temp_can["marks_by_htms"] = marks_by_htms
+					"""
+					temp_can['total_hiring_members'] = open_position_obj.htms.all().count()
+					temp_can['interviews_done'] = candidate_marks_obj.count()
+					if candidate_marks_obj:
+						temp_can['marks_given_by'] = candidate_marks_obj.count()
+						temp_can['flag_by_hiring_manager'] = []
+						for hm in open_position_obj.htms.all():
+							flag_data = get_htm_flag_data(hm, op_id, cao.candidate.candidate_id)
+							temp_can['flag_by_hiring_manager'].append(flag_data)
+					else:
+						temp_can['marks_given_by'] = 0
+						temp_can['flag_by_hiring_manager'] = []
+						for hm in open_position_obj.htms.all():
+							flag_data = get_htm_flag_data(hm, op_id, cao.candidate.candidate_id)
+							temp_can['flag_by_hiring_manager'].append(flag_data)
 					data.append(temp_can)	
 			# for i in data:
 			# 	caobj = CandidateAssociateData.objects.get(open_position=open_position_obj, candidate__candidate_id=i["candidate_id"])
@@ -800,8 +812,8 @@ class AllCandidateFeedback(APIView):
 			# 				flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
 			# 				i['flag_by_hiring_manager'].append(flag_data)
 			# 			continue
-			data = sorted(data, key=lambda i: i['avg_marks'])
-			data.reverse()
+			# data = sorted(data, key=lambda i: i['avg_marks'])
+			# data.reverse()
 			return Response(data, status=status.HTTP_200_OK)
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
