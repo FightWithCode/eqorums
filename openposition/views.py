@@ -442,7 +442,7 @@ class AllCandidateFeedback(APIView):
 					temp_can['offered'] = False
 				temp_can['op_id'] = op_id
 				temp_can['withdrawed'] = cao.withdrawed if cao.withdrawed else False
-				temp_can["requested"] = cao.accepted if cao.accepted else False
+				temp_can["requested"] = False if cao.accepted else True
 				temp_can['client_id'] = open_position_obj.client.id
 				if "is_htm" in logged_user_profile.roles:
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
