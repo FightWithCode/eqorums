@@ -422,6 +422,7 @@ class AllCandidateFeedback(APIView):
 				temp_can["candidate_id"] = cao.candidate.candidate_id
 				temp_can["profile_photo"] = get_candidate_profile(cao.candidate)
 				temp_can["name"] = cao.candidate.user.get_full_name()
+				temp_can["nickname"] = cao.candidate.nickname
 				temp_can["first_name"] = cao.candidate.user.first_name
 				temp_can["last_name"] = cao.candidate.user.last_name
 				temp_can["offer_no"] = get_offer_no(cao.candidate)
@@ -920,7 +921,6 @@ class GetAllOPData(APIView):
 			data["special_intruction"] = "some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name some name"
 			# get_candidate data
 			candidate_data = []
-			print(candidates_objs)
 			for can in candidates_objs:
 				try:
 					temp_can = {}
@@ -941,7 +941,6 @@ class GetAllOPData(APIView):
 						temp_can["resume"] = can.documents
 						temp_can["references"] = can.references
 					except Exception as e:
-						print(e)
 						temp_can["location"] = can.location
 						temp_can["work_auth"] = can.work_auth
 						temp_can["remote_only"] = "Not Specified"
@@ -975,8 +974,23 @@ class GetAllOPData(APIView):
 					temp_can["full_name"] = "{} {}".format(can.name, can.last_name)
 					temp_can["eval_notes"] = eval_data
 					temp_can["offers"] = Offered.objects.filter(candidate_id=can.candidate_id).count()
+					temp_can["thumbs_up_count"] = CandidateMarks.objects.filter(candidate_id=can.candidate_id, thumbs_up=True).count()
+					temp_can["thumbs_down_count"] = Offered.objects.filter(candidate_id=can.candidate_id, thumbs_down=True).count()
+					temp_can["golden_glove_count"] = Offered.objects.filter(candidate_id=can.candidate_id, golden_gloves=True).count()
 					temp_can["interviews_last_30"] = Interview.objects.filter(candidate=can).count()
 					temp_can["profile_photo"] = get_candidate_profile(can)
+					candidate_schedule_list = []
+					for interview in Interview.objects.filter(candidate=can, op_id__id=op_id).filter(disabled=False):
+						try:
+							temp_dict = {}
+							interviewers_names = interview.htm.all().values_list("user__first_name", flat=True)
+							temp_dict['interviewer_name'] = ", ".join(interviewers_names)
+							temp_dict['time'] = interview.interview_date_time.strftime("%m/%d/%Y, %H:%M:%S")
+							temp_can["interview_type"] = interview.interview_type
+							candidate_schedule_list.append(temp_dict)
+						except:
+							continue
+					temp_can['candidate_schedule'] = candidate_schedule_list
 					# get hire status
 					if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
 						temp_can['isHired'] = True
