@@ -194,6 +194,7 @@ class OpenPositionView(APIView):
                 except:
                     pass
             position_obj.position_title = request.data.get('position_title')
+            position_obj.position_type = request.data.get('position_type', position_obj.position_type)
             position_obj.special_intruction = request.data.get('special_intruction')
             current_grp = position_obj.hiring_group.group_id if position_obj.hiring_group else None 
             position_obj.kickoff_start_date = request.data.get('kickoff_start_date')
@@ -416,7 +417,7 @@ class AllCandidateFeedback(APIView):
 			data = []
 			logged_user = request.user
 			logged_user_profile = Profile.objects.get(user=logged_user)
-			for cao in CandidateAssociateData.objects.filter(open_position=open_position_obj, unique="candidate"):
+			for cao in CandidateAssociateData.objects.filter(open_position=open_position_obj).distinct("candidate"):
 				temp_can = {}
 				temp_can["candidate_id"] = cao.candidate.candidate_id
 				temp_can["profile_photo"] = get_candidate_profile(cao.candidate)
@@ -442,7 +443,7 @@ class AllCandidateFeedback(APIView):
 				temp_can['op_id'] = op_id
 				temp_can['withdrawed'] = cao.withdrawed if cao.withdrawed else False
 				temp_can["requested"] = cao.accepted if cao.accepted else False
-				temp_can['client_id'] = open_position_obj.client
+				temp_can['client_id'] = open_position_obj.client.id
 				if "is_htm" in logged_user_profile.roles:
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
 					given_by = candidate_marks_obj.marks_given_by
@@ -475,7 +476,7 @@ class AllCandidateFeedback(APIView):
 						except:
 							continue
 					temp_can['candidate_schedule'] = candidate_schedule_list
-					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id)
+					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=cao.candidate_id, op_id=op_id)
 					marks_by_htms = []
 					# for calculation avg marks
 					avg_marks = []
@@ -501,145 +502,17 @@ class AllCandidateFeedback(APIView):
 							for idx in range(0, len(position_obj.nskillsets)):
 								total_weightages[idx]["skillset_weightage"] += htm_weightage_obj.weightages[idx]["skillset_weightage"]
 						except HTMWeightage.DoesNotExist:
-							for idx in range(0, len(position_obj.nskillsets)):
+							for idx in range(0, len(open_position_obj.nskillsets)):
 								total_weightages[idx]["skillset_weightage"] += 10
 						except Exception as e:
 							print("some error occured while totaling weightages", str(e))
 							# remove this later
-							for idx in range(0, len(position_obj.nskillsets)):
+							for idx in range(0, len(open_position_obj.nskillsets)):
 								total_weightages[idx]["skillset_weightage"] += 10
 					# part of avg marks calculation algo
-					
-			for i in data:
-				caobj = CandidateAssociateData.objects.get(open_position=open_position_obj, candidate__candidate_id=i["candidate_id"])
-				# Additin Profile Picture
-				
-				
-				if "is_htm" in logged_user_profile.roles:
-					# Sending data as a HTM perspective
-					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
-					given_by = logged_user_profile.id
-					# Get weighage of the HTM if not found then assign 10 by default - Not being used
-					
-					if candidate_marks_obj:
-						avg_marks = 0
-						count = 0
-						# Algorith to calculate marks based on HTM Weightage and Skills Weightage
-						if candidate_marks_obj[0].criteria_1_marks not in [None]: 
-							count = count + 1
-							avg_marks = avg_marks + candidate_marks_obj[0].criteria_1_marks * open_position_obj.init_qualify_ques_weightage_1
-						if candidate_marks_obj[0].criteria_2_marks not in [None]:
-							count = count + 1
-							avg_marks = avg_marks + candidate_marks_obj[0].criteria_2_marks* open_position_obj.init_qualify_ques_weightage_2
-						if candidate_marks_obj[0].criteria_3_marks not in [None]:
-							count = count + 1
-							avg_marks = avg_marks + candidate_marks_obj[0].criteria_3_marks* open_position_obj.init_qualify_ques_weightage_3
-						if candidate_marks_obj[0].criteria_4_marks not in [None]:
-							count = count + 1
-							avg_marks = avg_marks + candidate_marks_obj[0].criteria_4_marks* open_position_obj.init_qualify_ques_weightage_4
-						if candidate_marks_obj[0].criteria_5_marks not in [None]:
-							count = count + 1
-							avg_marks = avg_marks + candidate_marks_obj[0].criteria_5_marks * open_position_obj.init_qualify_ques_weightage_5
-						if candidate_marks_obj[0].criteria_6_marks not in [None]:
-							count = count + 1
-							avg_marks = avg_marks + candidate_marks_obj[0].criteria_6_marks * open_position_obj.init_qualify_ques_weightage_6
-						if candidate_marks_obj[0].criteria_7_marks not in [ None]:
-							count = count + 1
-							avg_marks = avg_marks + candidate_marks_obj[0].criteria_7_marks * open_position_obj.init_qualify_ques_weightage_7
-						if candidate_marks_obj[0].criteria_8_marks not in [None]:
-							count = count + 1
-							avg_marks = avg_marks + candidate_marks_obj[0].criteria_8_marks * open_position_obj.init_qualify_ques_weightage_8
-						i['avg_marks'] = round(avg_marks / count, 1)
-						i['total_hiring_members'] = open_position_obj.htms.all().count()
-						all_marks_candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id)
-						i['final_avg_marks'] = i['avg_marks']  # (all_marks_candidate_marks_obj.aggregate(Avg('criteria_1_marks'))['criteria_1_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_2_marks'))['criteria_2_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_3_marks'))['criteria_3_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_4_marks'))['criteria_4_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_5_marks'))['criteria_5_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_6_marks'))['criteria_6_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_7_marks'))['criteria_7_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_8_marks'))['criteria_8_marks__avg']) / 8
-						i['marks_given_by'] = all_marks_candidate_marks_obj.count()
-						if candidate_marks_obj[0].thumbs_up:
-							i['he_flag'] = 'Thumbs Up'
-							i['flag'] = 'Thumbs Up'
-						if candidate_marks_obj[0].thumbs_down:
-							i['he_flag'] = 'Thumbs Down'
-							i['flag'] = 'Thumbs Down'
-						if candidate_marks_obj[0].hold:
-							i['he_flag'] = 'Hold'
-							i['flag'] = 'Hold'
-						if candidate_marks_obj[0].golden_gloves:
-							i['he_flag'] = 'Golden Glove'
-							i['flag'] = 'Golden Glove'
-						i['flag_by_hiring_manager'] = []
-						temp_dict = {}
-						temp_dict['id'] = int(logged_user_profile.id)
-						candidate_marks_obj = candidate_marks_obj[0]
-						if candidate_marks_obj.thumbs_up:
-							temp_dict['flag'] = 'Thumbs Up'
-						if candidate_marks_obj.thumbs_down:
-							temp_dict['flag'] = 'Thumbs Down'
-						if candidate_marks_obj.hold:
-							temp_dict['flag'] = 'Hold'
-						if candidate_marks_obj.golden_gloves:
-							temp_dict['flag'] = 'Golden Glove'
-						# get other htm specific data
-						try:
-							interview_obj = Interview.objects.filter(op_id__id=op_id, htm__in=[logged_user_profile], candidate__candidate_id=i['candidate_id'])[0]
-							# call the function and pass interview_obj and logged_user_profile
-							extra_data = get_htm_specific_data(interview_obj, logged_user_profile)
-							temp_dict.update(extra_data)
-						except:
-							pass
-						temp_dict["marks"] = i['final_avg_marks']
-						i['flag_by_hiring_manager'].append(temp_dict)
-					else:
-						i['marks'] = {}
-						i['final_avg_marks'] = 0
-						i['total_hiring_members'] = open_position_obj.htms.all().count()
-						i['marks_given_by'] = 0
-						i['flag'] = 'Not Given'
-						i['flag_by_hiring_manager'] = []
-						temp_dict = {}
-						temp_dict['id'] = int(logged_user_profile.id)
-						try:
-							interview_obj = Interview.objects.filter(op_id__id=op_id, htm__in=[logged_user_profile], candidate__candidate_id=i['candidate_id'])[0]
-							extra_data = get_htm_specific_data(interview_obj, logged_user_profile)
-							temp_dict.update(extra_data)
-						except:
-							pass
-						temp_dict["marks"] = i['final_avg_marks']
-						i['flag_by_hiring_manager'].append(temp_dict)
-				else:
-					# Sending data as HM, HR, SM, CA or SA
-					# Get all scheduled interviews for the candidate
-					# marks calculation
-					avg_marks = []
-					total_weightages = []
-					for skill in open_position_obj.nskillsets:
-						temp_avg_skillset = {}
-						temp_avg_skillset["skillset_name"] = skill["skillset_name"]
-						temp_avg_skillset["skillset_marks"] = 0
-						avg_marks.append(temp_avg_skillset)
-
-						temp_total_weightages = {}
-						temp_total_weightages["skillset_name"] = skill["skillset_name"]
-						temp_total_weightages["skillset_weightage"] = 0
-						total_weightages.append(temp_total_weightages)
 					for c_obj in candidate_marks_obj:
 						given_by = c_obj.marks_given_by
-						try:
-							# remove this
-							raise ValueError("This is awesome!!")
-							htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
-							weightage_count = 1
-							for idx in range(0, len(position_obj.nskillsets)):
-								total_weightages[idx]["skillset_weightage"] += htm_weightage_obj.weightages[idx]["skillset_weightage"]
-						except HTMWeightage.DoesNotExist:
-							for idx in range(0, len(open_position_obj.nskillsets)):
-								total_weightages[idx]["skillset_weightage"] += 10
-						except Exception as e:
-							print("some error occured while totaling weightages", str(e))
-							# remove this later
-							for idx in range(0, len(open_position_obj.nskillsets)):
-								total_weightages[idx]["skillset_weightage"] += 10
-					for c_obj in candidate_marks_obj:
-						given_by = c_obj.marks_given_by
+						marks_by_htms.append(c_obj.nmarks)
 						# for calculating avg marks
 						try:
 							htm_weightage_obj = HTMsDeadline.objects.get(open_position=open_position_obj, htm__id=given_by)
@@ -658,111 +531,276 @@ class AllCandidateFeedback(APIView):
 							avg_marks[count]["skillset_marks"] += c_obj.nmarks[count]["skillset_marks"] * htm_weightage[count]["skillset_weightage"]
 					print("avg marks after initial cal")
 					print(avg_marks)
+					# Calculate avg marks
 					if candidate_marks_obj:
-						for c_obj in candidate_marks_obj:
-							given_by = c_obj.marks_given_by
-							try:
-								htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
-								htm_weightage_1 = htm_weightage_obj.init_qualify_ques_1_weightage
-								htm_weightage_2 = htm_weightage_obj.init_qualify_ques_2_weightage
-								htm_weightage_3 = htm_weightage_obj.init_qualify_ques_3_weightage
-								htm_weightage_4 = htm_weightage_obj.init_qualify_ques_4_weightage
-								htm_weightage_5 = htm_weightage_obj.init_qualify_ques_5_weightage
-								htm_weightage_6 = htm_weightage_obj.init_qualify_ques_6_weightage
-								htm_weightage_7 = htm_weightage_obj.init_qualify_ques_7_weightage
-								htm_weightage_8 = htm_weightage_obj.init_qualify_ques_8_weightage
-							except Exception as e:
-								print(e)
-								i['error-in-htm-wightage'] = str(e)
-								htm_weightage_1 = 10
-								htm_weightage_2 = 10
-								htm_weightage_3 = 10
-								htm_weightage_4 = 10
-								htm_weightage_5 = 10
-								htm_weightage_6 = 10
-								htm_weightage_7 = 10
-								htm_weightage_8 = 10
-							marks_dict['init_qualify_ques_1'] = marks_dict['init_qualify_ques_1'] + c_obj.criteria_1_marks * htm_weightage_1
-							marks_dict['init_qualify_ques_2'] = marks_dict['init_qualify_ques_2'] + c_obj.criteria_2_marks * htm_weightage_2
-							marks_dict['init_qualify_ques_3'] = marks_dict['init_qualify_ques_3'] + c_obj.criteria_3_marks * htm_weightage_3
-							marks_dict['init_qualify_ques_4'] = marks_dict['init_qualify_ques_4'] + c_obj.criteria_4_marks * htm_weightage_4
-							marks_dict['init_qualify_ques_5'] = marks_dict['init_qualify_ques_5'] + c_obj.criteria_5_marks * htm_weightage_5
-							marks_dict['init_qualify_ques_6'] = marks_dict['init_qualify_ques_6'] + c_obj.criteria_6_marks * htm_weightage_6
-							marks_dict['init_qualify_ques_7'] = marks_dict['init_qualify_ques_7'] + c_obj.criteria_7_marks * htm_weightage_7
-							marks_dict['init_qualify_ques_8'] = marks_dict['init_qualify_ques_8'] + c_obj.criteria_8_marks * htm_weightage_8
-						marks_dict['init_qualify_ques_1'] = round(marks_dict['init_qualify_ques_1'] / htm_weightage_1_total, 1)
-						marks_dict['init_qualify_ques_2'] = round(marks_dict['init_qualify_ques_2'] / htm_weightage_2_total, 1)
-						marks_dict['init_qualify_ques_3'] = round(marks_dict['init_qualify_ques_3'] / htm_weightage_3_total, 1)
-						marks_dict['init_qualify_ques_4'] = round(marks_dict['init_qualify_ques_4'] / htm_weightage_4_total, 1)
-						marks_dict['init_qualify_ques_5'] = round(marks_dict['init_qualify_ques_5'] / htm_weightage_5_total, 1)
-						marks_dict['init_qualify_ques_6'] = round(marks_dict['init_qualify_ques_6'] / htm_weightage_6_total, 1)
-						marks_dict['init_qualify_ques_7'] = round(marks_dict['init_qualify_ques_7'] / htm_weightage_7_total, 1)
-						marks_dict['init_qualify_ques_8'] = round(marks_dict['init_qualify_ques_8'] / htm_weightage_8_total, 1)
-						i['marks'] = marks_dict
-						count = 0
-						avg_marks = 0
-						if marks_dict['init_qualify_ques_1'] not in [0, 0.0]:
-							count = count + open_position_obj.init_qualify_ques_weightage_1
-							avg_marks = avg_marks + marks_dict['init_qualify_ques_1'] * open_position_obj.init_qualify_ques_weightage_1
-						if marks_dict['init_qualify_ques_2'] not in [0, 0.0]:
-							count = count + open_position_obj.init_qualify_ques_weightage_2
-							avg_marks = avg_marks + marks_dict['init_qualify_ques_2'] * open_position_obj.init_qualify_ques_weightage_2
-						if marks_dict['init_qualify_ques_3'] not in [0, 0.0]:
-							count = count + open_position_obj.init_qualify_ques_weightage_3
-							avg_marks = avg_marks + marks_dict['init_qualify_ques_3'] * open_position_obj.init_qualify_ques_weightage_3
-						if marks_dict['init_qualify_ques_4'] not in [0, 0.0]:
-							count = count + open_position_obj.init_qualify_ques_weightage_4
-							avg_marks = avg_marks + marks_dict['init_qualify_ques_4'] * open_position_obj.init_qualify_ques_weightage_4
-						if marks_dict['init_qualify_ques_5'] not in [0, 0.0]:
-							count = count + open_position_obj.init_qualify_ques_weightage_5
-							avg_marks = avg_marks + marks_dict['init_qualify_ques_5'] * open_position_obj.init_qualify_ques_weightage_5
-						if marks_dict['init_qualify_ques_6'] not in [0, 0.0]:
-							count = count + open_position_obj.init_qualify_ques_weightage_6
-							avg_marks = avg_marks + marks_dict['init_qualify_ques_6'] * open_position_obj.init_qualify_ques_weightage_6
-						if marks_dict['init_qualify_ques_7'] not in [0, 0.0]:
-							count = count + open_position_obj.init_qualify_ques_weightage_7
-							avg_marks = avg_marks + marks_dict['init_qualify_ques_7'] * open_position_obj.init_qualify_ques_weightage_7
-						if marks_dict['init_qualify_ques_8'] not in [0, 0.0]:
-							count = count + open_position_obj.init_qualify_ques_weightage_8
-							avg_marks = avg_marks + marks_dict['init_qualify_ques_8'] * open_position_obj.init_qualify_ques_weightage_8
-						i['total_hiring_members'] = open_position_obj.htms.all().count()
-						i['marks_given_by'] = candidate_marks_obj.count()
-						thumbs_up = 0
-						thumbs_down = 0
-						hold = 0
-						print(count, avg_marks)
-						if count:
-							i['final_avg_marks'] = round(avg_marks / count, 1)
+						overall_avg_marks = 0
+						total_position_weightage = 0
+						for idx in range(0, len(open_position_obj.nskillsets)):
+							avg_marks[idx]["skillset_marks"] = round(avg_marks[idx]["skillset_marks"] / total_weightages[idx]["skillset_weightage"], 1)
+							overall_avg_marks += avg_marks[idx]["skillset_marks"] * open_position_obj.nskillsets[idx]["skillset_weightage"]
+							total_position_weightage += open_position_obj.nskillsets[idx]["skillset_weightage"]
+							print(overall_avg_marks, total_position_weightage)
+						if total_position_weightage:
+							temp_can['avg_marks'] = round(overall_avg_marks / total_position_weightage, 1)
 						else:
-							i['final_avg_marks'] = 0.0
-						i['he_flag'] = None
-						i['flag_by_hiring_manager'] = []
-						i['like_count'] = 0
-						i['hold_count'] = 0
-						i['pass_count'] = 0
-						i['golden_glove_count'] = 0
-						hm_list = open_position_obj.htms.all()
-						for hm in hm_list:
-							flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
-							i['flag_by_hiring_manager'].append(flag_data)
-						i['interviews_done'] = candidate_marks_obj.count()
+							temp_can['avg_marks'] = 0.0
 					else:
-						i['flag_by_hiring_manager'] = []
-						i['marks'] = {}
-						i['final_avg_marks'] = 0
-						i['total_hiring_members'] = open_position_obj.htms.all().count()
-						i['marks_given_by'] = 0
-						i['flag'] = 'Not Given'
-						i['like_count'] = 0
-						i['hold_count'] = 0
-						i['pass_count'] = 0
-						i['golden_glove_count'] = 0
-						hm_list = open_position_obj.htms.all()
-						for hm in hm_list:
-							flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
-							i['flag_by_hiring_manager'].append(flag_data)
-						continue
-			data = sorted(data, key=lambda i: i['final_avg_marks'])
+						temp_can['avg_marks'] = 0.0
+					temp_can["marks_by_htms"] = marks_by_htms
+					data.append(temp_can)	
+			# for i in data:
+			# 	caobj = CandidateAssociateData.objects.get(open_position=open_position_obj, candidate__candidate_id=i["candidate_id"])
+			# 	# Additin Profile Picture
+				
+				
+			# 	if "is_htm" in logged_user_profile.roles:
+			# 		# Sending data as a HTM perspective
+			# 		candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
+			# 		given_by = logged_user_profile.id
+			# 		# Get weighage of the HTM if not found then assign 10 by default - Not being used
+					
+			# 		if candidate_marks_obj:
+			# 			avg_marks = 0
+			# 			count = 0
+			# 			# Algorith to calculate marks based on HTM Weightage and Skills Weightage
+			# 			if candidate_marks_obj[0].criteria_1_marks not in [None]: 
+			# 				count = count + 1
+			# 				avg_marks = avg_marks + candidate_marks_obj[0].criteria_1_marks * open_position_obj.init_qualify_ques_weightage_1
+			# 			if candidate_marks_obj[0].criteria_2_marks not in [None]:
+			# 				count = count + 1
+			# 				avg_marks = avg_marks + candidate_marks_obj[0].criteria_2_marks* open_position_obj.init_qualify_ques_weightage_2
+			# 			if candidate_marks_obj[0].criteria_3_marks not in [None]:
+			# 				count = count + 1
+			# 				avg_marks = avg_marks + candidate_marks_obj[0].criteria_3_marks* open_position_obj.init_qualify_ques_weightage_3
+			# 			if candidate_marks_obj[0].criteria_4_marks not in [None]:
+			# 				count = count + 1
+			# 				avg_marks = avg_marks + candidate_marks_obj[0].criteria_4_marks* open_position_obj.init_qualify_ques_weightage_4
+			# 			if candidate_marks_obj[0].criteria_5_marks not in [None]:
+			# 				count = count + 1
+			# 				avg_marks = avg_marks + candidate_marks_obj[0].criteria_5_marks * open_position_obj.init_qualify_ques_weightage_5
+			# 			if candidate_marks_obj[0].criteria_6_marks not in [None]:
+			# 				count = count + 1
+			# 				avg_marks = avg_marks + candidate_marks_obj[0].criteria_6_marks * open_position_obj.init_qualify_ques_weightage_6
+			# 			if candidate_marks_obj[0].criteria_7_marks not in [ None]:
+			# 				count = count + 1
+			# 				avg_marks = avg_marks + candidate_marks_obj[0].criteria_7_marks * open_position_obj.init_qualify_ques_weightage_7
+			# 			if candidate_marks_obj[0].criteria_8_marks not in [None]:
+			# 				count = count + 1
+			# 				avg_marks = avg_marks + candidate_marks_obj[0].criteria_8_marks * open_position_obj.init_qualify_ques_weightage_8
+			# 			i['avg_marks'] = round(avg_marks / count, 1)
+			# 			i['total_hiring_members'] = open_position_obj.htms.all().count()
+			# 			all_marks_candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id)
+			# 			i['final_avg_marks'] = i['avg_marks']  # (all_marks_candidate_marks_obj.aggregate(Avg('criteria_1_marks'))['criteria_1_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_2_marks'))['criteria_2_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_3_marks'))['criteria_3_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_4_marks'))['criteria_4_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_5_marks'))['criteria_5_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_6_marks'))['criteria_6_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_7_marks'))['criteria_7_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_8_marks'))['criteria_8_marks__avg']) / 8
+			# 			i['marks_given_by'] = all_marks_candidate_marks_obj.count()
+			# 			if candidate_marks_obj[0].thumbs_up:
+			# 				i['he_flag'] = 'Thumbs Up'
+			# 				i['flag'] = 'Thumbs Up'
+			# 			if candidate_marks_obj[0].thumbs_down:
+			# 				i['he_flag'] = 'Thumbs Down'
+			# 				i['flag'] = 'Thumbs Down'
+			# 			if candidate_marks_obj[0].hold:
+			# 				i['he_flag'] = 'Hold'
+			# 				i['flag'] = 'Hold'
+			# 			if candidate_marks_obj[0].golden_gloves:
+			# 				i['he_flag'] = 'Golden Glove'
+			# 				i['flag'] = 'Golden Glove'
+			# 			i['flag_by_hiring_manager'] = []
+			# 			temp_dict = {}
+			# 			temp_dict['id'] = int(logged_user_profile.id)
+			# 			candidate_marks_obj = candidate_marks_obj[0]
+			# 			if candidate_marks_obj.thumbs_up:
+			# 				temp_dict['flag'] = 'Thumbs Up'
+			# 			if candidate_marks_obj.thumbs_down:
+			# 				temp_dict['flag'] = 'Thumbs Down'
+			# 			if candidate_marks_obj.hold:
+			# 				temp_dict['flag'] = 'Hold'
+			# 			if candidate_marks_obj.golden_gloves:
+			# 				temp_dict['flag'] = 'Golden Glove'
+			# 			# get other htm specific data
+			# 			try:
+			# 				interview_obj = Interview.objects.filter(op_id__id=op_id, htm__in=[logged_user_profile], candidate__candidate_id=i['candidate_id'])[0]
+			# 				# call the function and pass interview_obj and logged_user_profile
+			# 				extra_data = get_htm_specific_data(interview_obj, logged_user_profile)
+			# 				temp_dict.update(extra_data)
+			# 			except:
+			# 				pass
+			# 			temp_dict["marks"] = i['final_avg_marks']
+			# 			i['flag_by_hiring_manager'].append(temp_dict)
+			# 		else:
+			# 			i['marks'] = {}
+			# 			i['final_avg_marks'] = 0
+			# 			i['total_hiring_members'] = open_position_obj.htms.all().count()
+			# 			i['marks_given_by'] = 0
+			# 			i['flag'] = 'Not Given'
+			# 			i['flag_by_hiring_manager'] = []
+			# 			temp_dict = {}
+			# 			temp_dict['id'] = int(logged_user_profile.id)
+			# 			try:
+			# 				interview_obj = Interview.objects.filter(op_id__id=op_id, htm__in=[logged_user_profile], candidate__candidate_id=i['candidate_id'])[0]
+			# 				extra_data = get_htm_specific_data(interview_obj, logged_user_profile)
+			# 				temp_dict.update(extra_data)
+			# 			except:
+			# 				pass
+			# 			temp_dict["marks"] = i['final_avg_marks']
+			# 			i['flag_by_hiring_manager'].append(temp_dict)
+			# 	else:
+			# 		# Sending data as HM, HR, SM, CA or SA
+			# 		# Get all scheduled interviews for the candidate
+			# 		# marks calculation
+			# 		avg_marks = []
+			# 		total_weightages = []
+			# 		for skill in open_position_obj.nskillsets:
+			# 			temp_avg_skillset = {}
+			# 			temp_avg_skillset["skillset_name"] = skill["skillset_name"]
+			# 			temp_avg_skillset["skillset_marks"] = 0
+			# 			avg_marks.append(temp_avg_skillset)
+
+			# 			temp_total_weightages = {}
+			# 			temp_total_weightages["skillset_name"] = skill["skillset_name"]
+			# 			temp_total_weightages["skillset_weightage"] = 0
+			# 			total_weightages.append(temp_total_weightages)
+			# 		for c_obj in candidate_marks_obj:
+			# 			given_by = c_obj.marks_given_by
+			# 			try:
+			# 				# remove this
+			# 				raise ValueError("This is awesome!!")
+			# 				htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
+			# 				weightage_count = 1
+			# 				for idx in range(0, len(position_obj.nskillsets)):
+			# 					total_weightages[idx]["skillset_weightage"] += htm_weightage_obj.weightages[idx]["skillset_weightage"]
+			# 			except HTMWeightage.DoesNotExist:
+			# 				for idx in range(0, len(open_position_obj.nskillsets)):
+			# 					total_weightages[idx]["skillset_weightage"] += 10
+			# 			except Exception as e:
+			# 				print("some error occured while totaling weightages", str(e))
+			# 				# remove this later
+			# 				for idx in range(0, len(open_position_obj.nskillsets)):
+			# 					total_weightages[idx]["skillset_weightage"] += 10
+			# 		for c_obj in candidate_marks_obj:
+			# 			given_by = c_obj.marks_given_by
+			# 			# for calculating avg marks
+			# 			try:
+			# 				htm_weightage_obj = HTMsDeadline.objects.get(open_position=open_position_obj, htm__id=given_by)
+			# 				htm_weightage = htm_weightage_obj.skillset_weightage
+			# 			except HTMsDeadline.DoesNotExist:
+			# 				htm_weightage = []
+			# 				for idx in range(0, len(open_position_obj.nskillsets)):
+			# 					htm_weightage.append({"skillset_weightage": 10})
+			# 			except Exception as e:
+			# 				print("some error occured while totaling weightages", str(e))
+			# 				# remove this later
+			# 				htm_weightage = []
+			# 				for idx in range(0, len(open_position_obj.nskillsets)):
+			# 					htm_weightage.append({"skillset_weightage": 10})
+			# 			for count in range(0, len(open_position_obj.nskillsets)):
+			# 				avg_marks[count]["skillset_marks"] += c_obj.nmarks[count]["skillset_marks"] * htm_weightage[count]["skillset_weightage"]
+			# 		print("avg marks after initial cal")
+			# 		print(avg_marks)
+			# 		if candidate_marks_obj:
+			# 			for c_obj in candidate_marks_obj:
+			# 				given_by = c_obj.marks_given_by
+			# 				try:
+			# 					htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
+			# 					htm_weightage_1 = htm_weightage_obj.init_qualify_ques_1_weightage
+			# 					htm_weightage_2 = htm_weightage_obj.init_qualify_ques_2_weightage
+			# 					htm_weightage_3 = htm_weightage_obj.init_qualify_ques_3_weightage
+			# 					htm_weightage_4 = htm_weightage_obj.init_qualify_ques_4_weightage
+			# 					htm_weightage_5 = htm_weightage_obj.init_qualify_ques_5_weightage
+			# 					htm_weightage_6 = htm_weightage_obj.init_qualify_ques_6_weightage
+			# 					htm_weightage_7 = htm_weightage_obj.init_qualify_ques_7_weightage
+			# 					htm_weightage_8 = htm_weightage_obj.init_qualify_ques_8_weightage
+			# 				except Exception as e:
+			# 					print(e)
+			# 					i['error-in-htm-wightage'] = str(e)
+			# 					htm_weightage_1 = 10
+			# 					htm_weightage_2 = 10
+			# 					htm_weightage_3 = 10
+			# 					htm_weightage_4 = 10
+			# 					htm_weightage_5 = 10
+			# 					htm_weightage_6 = 10
+			# 					htm_weightage_7 = 10
+			# 					htm_weightage_8 = 10
+			# 				marks_dict['init_qualify_ques_1'] = marks_dict['init_qualify_ques_1'] + c_obj.criteria_1_marks * htm_weightage_1
+			# 				marks_dict['init_qualify_ques_2'] = marks_dict['init_qualify_ques_2'] + c_obj.criteria_2_marks * htm_weightage_2
+			# 				marks_dict['init_qualify_ques_3'] = marks_dict['init_qualify_ques_3'] + c_obj.criteria_3_marks * htm_weightage_3
+			# 				marks_dict['init_qualify_ques_4'] = marks_dict['init_qualify_ques_4'] + c_obj.criteria_4_marks * htm_weightage_4
+			# 				marks_dict['init_qualify_ques_5'] = marks_dict['init_qualify_ques_5'] + c_obj.criteria_5_marks * htm_weightage_5
+			# 				marks_dict['init_qualify_ques_6'] = marks_dict['init_qualify_ques_6'] + c_obj.criteria_6_marks * htm_weightage_6
+			# 				marks_dict['init_qualify_ques_7'] = marks_dict['init_qualify_ques_7'] + c_obj.criteria_7_marks * htm_weightage_7
+			# 				marks_dict['init_qualify_ques_8'] = marks_dict['init_qualify_ques_8'] + c_obj.criteria_8_marks * htm_weightage_8
+			# 			marks_dict['init_qualify_ques_1'] = round(marks_dict['init_qualify_ques_1'] / htm_weightage_1_total, 1)
+			# 			marks_dict['init_qualify_ques_2'] = round(marks_dict['init_qualify_ques_2'] / htm_weightage_2_total, 1)
+			# 			marks_dict['init_qualify_ques_3'] = round(marks_dict['init_qualify_ques_3'] / htm_weightage_3_total, 1)
+			# 			marks_dict['init_qualify_ques_4'] = round(marks_dict['init_qualify_ques_4'] / htm_weightage_4_total, 1)
+			# 			marks_dict['init_qualify_ques_5'] = round(marks_dict['init_qualify_ques_5'] / htm_weightage_5_total, 1)
+			# 			marks_dict['init_qualify_ques_6'] = round(marks_dict['init_qualify_ques_6'] / htm_weightage_6_total, 1)
+			# 			marks_dict['init_qualify_ques_7'] = round(marks_dict['init_qualify_ques_7'] / htm_weightage_7_total, 1)
+			# 			marks_dict['init_qualify_ques_8'] = round(marks_dict['init_qualify_ques_8'] / htm_weightage_8_total, 1)
+			# 			i['marks'] = marks_dict
+			# 			count = 0
+			# 			avg_marks = 0
+			# 			if marks_dict['init_qualify_ques_1'] not in [0, 0.0]:
+			# 				count = count + open_position_obj.init_qualify_ques_weightage_1
+			# 				avg_marks = avg_marks + marks_dict['init_qualify_ques_1'] * open_position_obj.init_qualify_ques_weightage_1
+			# 			if marks_dict['init_qualify_ques_2'] not in [0, 0.0]:
+			# 				count = count + open_position_obj.init_qualify_ques_weightage_2
+			# 				avg_marks = avg_marks + marks_dict['init_qualify_ques_2'] * open_position_obj.init_qualify_ques_weightage_2
+			# 			if marks_dict['init_qualify_ques_3'] not in [0, 0.0]:
+			# 				count = count + open_position_obj.init_qualify_ques_weightage_3
+			# 				avg_marks = avg_marks + marks_dict['init_qualify_ques_3'] * open_position_obj.init_qualify_ques_weightage_3
+			# 			if marks_dict['init_qualify_ques_4'] not in [0, 0.0]:
+			# 				count = count + open_position_obj.init_qualify_ques_weightage_4
+			# 				avg_marks = avg_marks + marks_dict['init_qualify_ques_4'] * open_position_obj.init_qualify_ques_weightage_4
+			# 			if marks_dict['init_qualify_ques_5'] not in [0, 0.0]:
+			# 				count = count + open_position_obj.init_qualify_ques_weightage_5
+			# 				avg_marks = avg_marks + marks_dict['init_qualify_ques_5'] * open_position_obj.init_qualify_ques_weightage_5
+			# 			if marks_dict['init_qualify_ques_6'] not in [0, 0.0]:
+			# 				count = count + open_position_obj.init_qualify_ques_weightage_6
+			# 				avg_marks = avg_marks + marks_dict['init_qualify_ques_6'] * open_position_obj.init_qualify_ques_weightage_6
+			# 			if marks_dict['init_qualify_ques_7'] not in [0, 0.0]:
+			# 				count = count + open_position_obj.init_qualify_ques_weightage_7
+			# 				avg_marks = avg_marks + marks_dict['init_qualify_ques_7'] * open_position_obj.init_qualify_ques_weightage_7
+			# 			if marks_dict['init_qualify_ques_8'] not in [0, 0.0]:
+			# 				count = count + open_position_obj.init_qualify_ques_weightage_8
+			# 				avg_marks = avg_marks + marks_dict['init_qualify_ques_8'] * open_position_obj.init_qualify_ques_weightage_8
+			# 			i['total_hiring_members'] = open_position_obj.htms.all().count()
+			# 			i['marks_given_by'] = candidate_marks_obj.count()
+			# 			thumbs_up = 0
+			# 			thumbs_down = 0
+			# 			hold = 0
+			# 			print(count, avg_marks)
+			# 			if count:
+			# 				i['final_avg_marks'] = round(avg_marks / count, 1)
+			# 			else:
+			# 				i['final_avg_marks'] = 0.0
+			# 			i['he_flag'] = None
+			# 			i['flag_by_hiring_manager'] = []
+			# 			i['like_count'] = 0
+			# 			i['hold_count'] = 0
+			# 			i['pass_count'] = 0
+			# 			i['golden_glove_count'] = 0
+			# 			hm_list = open_position_obj.htms.all()
+			# 			for hm in hm_list:
+			# 				flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
+			# 				i['flag_by_hiring_manager'].append(flag_data)
+			# 			i['interviews_done'] = candidate_marks_obj.count()
+			# 		else:
+			# 			i['flag_by_hiring_manager'] = []
+			# 			i['marks'] = {}
+			# 			i['final_avg_marks'] = 0
+			# 			i['total_hiring_members'] = open_position_obj.htms.all().count()
+			# 			i['marks_given_by'] = 0
+			# 			i['flag'] = 'Not Given'
+			# 			i['like_count'] = 0
+			# 			i['hold_count'] = 0
+			# 			i['pass_count'] = 0
+			# 			i['golden_glove_count'] = 0
+			# 			hm_list = open_position_obj.htms.all()
+			# 			for hm in hm_list:
+			# 				flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
+			# 				i['flag_by_hiring_manager'].append(flag_data)
+			# 			continue
+			data = sorted(data, key=lambda i: i['avg_marks'])
 			data.reverse()
 			return Response(data, status=status.HTTP_200_OK)
 		except Exception as e:
