@@ -204,8 +204,8 @@ class OpenPositionView(APIView):
 
             position_obj.final_round_completetion_date = request.data.get('final_round_completetion_date')
 
-            position_obj.skillsets = request.data.get("skillsets")
-            position_obj.nskillsets = request.data.get("skillsets")
+            position_obj.skillsets = json.loads(request.data.get("skillsets"))
+            position_obj.nskillsets = json.loads(request.data.get("skillsets"))
             if request.data.get('drafted') in ['False', "false", False, None, ""]:
                 position_obj.drafted = False
             else:
