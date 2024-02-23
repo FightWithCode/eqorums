@@ -36,4 +36,3 @@ class CandidateSerializer(serializers.ModelSerializer):
 			return True
 		else:
 			return False
-

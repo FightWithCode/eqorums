@@ -48,9 +48,11 @@ from openposition.serializers import OpenPositionSerializer
 from candidates.serializers import CandidateSerializer
 
 # utils import
+from candidates.utils import get_candidate_profile, get_holds_no, get_offer_no, get_pass_no
 from openposition.utils import get_htm_specific_data
 from openposition.utils import get_skillsets_data, get_htm_flag_data
 from dashboard import tasks
+
 
 # Open Position View Step 1
 class OpenPositionView(APIView):
@@ -194,16 +196,6 @@ class OpenPositionView(APIView):
             position_obj.position_title = request.data.get('position_title')
             position_obj.special_intruction = request.data.get('special_intruction')
             current_grp = position_obj.hiring_group.group_id if position_obj.hiring_group else None 
-            if current_grp and current_grp == request.data.get('hiring_group'):
-                pass
-            else:
-                try:
-                    group_obj = HiringGroup.objects.get(group_id=request.data.get('hiring_group'))
-                    position_obj.hiring_group = group_obj
-                    position_obj.withdrawed_members.clear() 
-                except:
-                    pass
-            
             position_obj.kickoff_start_date = request.data.get('kickoff_start_date')
             position_obj.sourcing_deadline = request.data.get('sourcing_deadline')
             position_obj.target_deadline = request.data.get('target_deadline')
@@ -214,7 +206,7 @@ class OpenPositionView(APIView):
 
             position_obj.skillsets = request.data.get("skillsets")
             position_obj.nskillsets = request.data.get("skillsets")
-            if request.data.get('drafted') in ['False', "false", False]:
+            if request.data.get('drafted') in ['False', "false", False, None, ""]:
                 position_obj.drafted = False
             else:
                 position_obj.drafted = True
@@ -420,38 +412,45 @@ class AllCandidateFeedback(APIView):
 	def get(self, request, op_id):
 		try:
 			open_position_obj = OpenPosition.objects.get(id=op_id)
-			candidates_obj = []
-			for cao in CandidateAssociateData.objects.filter(open_position=open_position_obj):
-				if cao.candidate not in candidates_obj:
-					candidates_obj.append(cao.candidate)
-			candidates_serializer = CandidateSerializer(candidates_obj, many=True)
-			data = candidates_serializer.data
+			cao_objs = []
+			data = []
 			logged_user = request.user
 			logged_user_profile = Profile.objects.get(user=logged_user)
+			for cao in CandidateAssociateData.objects.filter(open_position=open_position_obj, unique="candidate"):
+				temp_can = {}
+				temp_can["candidate_id"] = cao.candidate.candidate_id
+				temp_can["profile_photo"] = get_candidate_profile(cao.candidate)
+				temp_can["name"] = cao.candidate.user.get_full_name()
+				temp_can["first_name"] = cao.candidate.user.first_name
+				temp_can["last_name"] = cao.candidate.user.last_name
+				temp_can["offer_no"] = get_offer_no(cao.candidate)
+				temp_can["pass_no"] = get_pass_no(cao.candidate)
+				temp_can["like_count"] = 0
+				temp_can["pass_count"] = 0
+				temp_can['golden_glove_count'] = 0
+				try:
+					hire_obj = Hired.objects.get(candidate_id=cao.candidate.candidate_id, op_id=op_id)
+					temp_can['hired'] = True
+				except:
+					temp_can['hired'] = False
+				# Getting Offered or not
+				try:
+					hire_obj = Offered.objects.get(candidate_id=cao.candidate.candidate_id, op_id=op_id)
+					temp_can['offered'] = True
+				except:
+					temp_can['offered'] = False
+				temp_can['op_id'] = op_id
+				temp_can['withdrawed'] = cao.withdrawed if cao.withdrawed else False
+				temp_can["requested"] = cao.accepted if cao.accepted else False
+				temp_can['client_id'] = open_position_obj.client
+				candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
+				given_by = candidate_marks_obj.marks_given_by
+
+
 			for i in data:
 				caobj = CandidateAssociateData.objects.get(open_position=open_position_obj, candidate__candidate_id=i["candidate_id"])
 				# Additin Profile Picture
-				if 'profile_pic_url' in i['linkedin_data'] and i['linkedin_data']['profile_pic_url'] and i['linkedin_data']['profile_pic_url'] != "null":
-					i['profile_photo'] = i['linkedin_data']['profile_pic_url']
-				else:
-					i['profile_photo'] = i['profile_photo']
-				# Getting if hired or not
-				try:
-					hire_obj = Hired.objects.get(candidate_id=i['candidate_id'], op_id=op_id)
-					i['hired'] = True
-				except:
-					i['hired'] = False
-				# Getting Offered or not
-				try:
-					hire_obj = Offered.objects.get(candidate_id=i['candidate_id'], op_id=op_id)
-					i['offered'] = True
-				except:
-					i['offered'] = False
-				# Getting withdrawed and requested data
-				i['op_id'] = op_id
-				i['withdrawed'] = caobj.withdrawed if caobj.withdrawed else False
-				i["requested"] = caobj.accepted if caobj.accepted else False
-				i['client_id'] = open_position_obj.client
+				
 				
 				if "is_htm" in logged_user_profile.roles:
 					# Sending data as a HTM perspective
