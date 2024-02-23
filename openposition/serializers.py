@@ -17,7 +17,7 @@ from openposition.models import (
 from candidates.models import (
 	Candidate
 )
-from dashboard.models import HTMAvailability
+from dashboard.models import Profile
 from hiringgroup.models import HiringGroup
 
 class OpenPositionSerializer(serializers.ModelSerializer):
@@ -29,10 +29,22 @@ class OpenPositionSerializer(serializers.ModelSerializer):
 	position_filled = serializers.SerializerMethodField(read_only=True)
 	status = serializers.SerializerMethodField(read_only=True)
 	decumentation = serializers.SerializerMethodField(read_only=True)
+	senior_manager = serializers.SerializerMethodField(read_only=True)
 
 	class Meta:
 		model = OpenPosition
 		fields = '__all__'
+	def get_senior_manager(self, obj):
+		try:
+			senior_managers = []
+			for sm in Profile.objects.filter(roles__contains=["is_sm"], client=str(obj.client.id)):
+				senior_managers.append(sm.user.get_full_name())
+			if senior_managers:
+				return ", ".join(senior_managers)
+			else:
+				return "{}()".format(Profile.objects.filter(roles__contains=["is_ca"], client=str(obj.client.id)))[0].user.get_full_name()
+		except:
+			return "NA"
 	def get_decumentation(self, obj):
 		doc_urls = []
 		for i in PositionDoc.objects.filter(openposition=obj):

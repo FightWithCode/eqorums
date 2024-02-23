@@ -446,7 +446,7 @@ class AllCandidateFeedback(APIView):
 				temp_can["requested"] = False if cao.accepted else True
 				temp_can['client_id'] = open_position_obj.client.id
 				if "is_htm" in logged_user_profile.roles:
-					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
+					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=cao.candidate.candidate_id, op_id=op_id, marks_given_by=logged_user_profile.id)
 					given_by = candidate_marks_obj.marks_given_by
 					try:
 						htm_weightage_obj = HTMsDeadline.objects.get(open_position=open_position_obj, htm__id=given_by)
