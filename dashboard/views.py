@@ -3618,7 +3618,8 @@ class AllCandidateFeedback(APIView):
 			data = candidates_serializer.data
 			try:
 				hiring_group_obj = HiringGroup.objects.get(group_id=open_position_obj.hiring_group)
-			except:
+			except Exception as e:
+				print(e)
 				for i in data:
 					i['final_avg_marks'] = 0
 					i['total_hiring_members'] = 1

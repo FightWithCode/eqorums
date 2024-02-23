@@ -426,17 +426,6 @@ class AllCandidateFeedback(APIView):
 					candidates_obj.append(cao.candidate)
 			candidates_serializer = CandidateSerializer(candidates_obj, many=True)
 			data = candidates_serializer.data
-			try:
-				hiring_group_obj = HiringGroup.objects.get(group_id=open_position_obj.hiring_group)
-			except:
-				for i in data:
-					i['final_avg_marks'] = 0
-					i['total_hiring_members'] = 1
-					i['marks_given_by'] = 0
-					i['flag'] = 'Not Given'
-					i['op_id'] = op_id
-					i['client_id'] = open_position_obj.client.id
-				return Response(data, status=status.HTTP_200_OK)
 			logged_user = request.user
 			logged_user_profile = Profile.objects.get(user=logged_user)
 			for i in data:
@@ -464,13 +453,13 @@ class AllCandidateFeedback(APIView):
 				i["requested"] = caobj.accepted if caobj.accepted else False
 				i['client_id'] = open_position_obj.client
 				
-				if "is_htm" in logged_user_profile.roles and hiring_group_obj.hod_profile != request.user.profile and hiring_group_obj.hr_profile != request.user.profile:
+				if "is_htm" in logged_user_profile.roles:
 					# Sending data as a HTM perspective
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by=logged_user_profile.id)
 					given_by = logged_user_profile.id
 					# Get weighage of the HTM if not found then assign 10 by default - Not being used
 					try:
-						htm_weightage_obj = HTMsDeadline.objects.get(open_position=position_obj, htm__id=given_by)
+						htm_weightage_obj = HTMsDeadline.objects.get(open_position=open_position_obj, htm__id=given_by)
 						htm_weightage = htm_weightage_obj.skillset_weightage
 					except HTMsDeadline.DoesNotExist:
 						htm_weightage = []
@@ -511,7 +500,7 @@ class AllCandidateFeedback(APIView):
 							count = count + 1
 							avg_marks = avg_marks + candidate_marks_obj[0].criteria_8_marks * open_position_obj.init_qualify_ques_weightage_8
 						i['avg_marks'] = round(avg_marks / count, 1)
-						i['total_hiring_members'] = hiring_group_obj.members_list.all().count() - 1
+						i['total_hiring_members'] = open_position_obj.htms.all().count()
 						all_marks_candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id)
 						i['final_avg_marks'] = i['avg_marks']  # (all_marks_candidate_marks_obj.aggregate(Avg('criteria_1_marks'))['criteria_1_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_2_marks'))['criteria_2_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_3_marks'))['criteria_3_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_4_marks'))['criteria_4_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_5_marks'))['criteria_5_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_6_marks'))['criteria_6_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_7_marks'))['criteria_7_marks__avg'] + all_marks_candidate_marks_obj.aggregate(Avg('criteria_8_marks'))['criteria_8_marks__avg']) / 8
 						i['marks_given_by'] = all_marks_candidate_marks_obj.count()
@@ -552,7 +541,7 @@ class AllCandidateFeedback(APIView):
 					else:
 						i['marks'] = {}
 						i['final_avg_marks'] = 0
-						i['total_hiring_members'] = hiring_group_obj.members_list.all().count() - 1
+						i['total_hiring_members'] = open_position_obj.htms.all().count()
 						i['marks_given_by'] = 0
 						i['flag'] = 'Not Given'
 						i['flag_by_hiring_manager'] = []
@@ -568,16 +557,6 @@ class AllCandidateFeedback(APIView):
 						i['flag_by_hiring_manager'].append(temp_dict)
 				else:
 					# Sending data as HM, HR, SM, CA or SA
-					# Check Candidate Marks Code from here
-					marks_dict = {}
-					marks_dict['init_qualify_ques_1'] = 0
-					marks_dict['init_qualify_ques_2'] = 0
-					marks_dict['init_qualify_ques_3'] = 0
-					marks_dict['init_qualify_ques_4'] = 0
-					marks_dict['init_qualify_ques_5'] = 0
-					marks_dict['init_qualify_ques_6'] = 0
-					marks_dict['init_qualify_ques_7'] = 0
-					marks_dict['init_qualify_ques_8'] = 0
 					# Get all scheduled interviews for the candidate
 					candidate_schedule_list = []
 					for interview in Interview.objects.filter(candidate__candidate_id=i["candidate_id"], op_id__id=op_id).filter(disabled=False):
@@ -591,9 +570,7 @@ class AllCandidateFeedback(APIView):
 							continue
 					i['candidate_schedule'] = candidate_schedule_list
 					HM_vote = {}
-					members_list = list(hiring_group_obj.members_list.all().values_list("id", flat=True))
-					if hiring_group_obj.hod_profile:
-						members_list.append(hiring_group_obj.hod_profile.id)
+					members_list = open_position_obj.htms.all().values_list("id", flat=True)
 					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by__in=members_list)
 					candidate_status_HM = CandidateStatus.objects.filter(candidate_id=i['candidate_id'], op_id=op_id)
 					if candidate_status_HM:
@@ -601,35 +578,56 @@ class AllCandidateFeedback(APIView):
 						HM_vote["make_offer_status"] = candidate_status_HM[0].make_offer_status
 						HM_vote["finall_selection_status"] = candidate_status_HM[0].finall_selection_status
 						i["vote_by_HM"]=HM_vote
-					htm_weightage_1_total = 0
-					htm_weightage_2_total = 0
-					htm_weightage_3_total = 0
-					htm_weightage_4_total = 0
-					htm_weightage_5_total = 0
-					htm_weightage_6_total = 0
-					htm_weightage_7_total = 0
-					htm_weightage_8_total = 0
+					# marks calculation
+					avg_marks = []
+					total_weightages = []
+					for skill in open_position_obj.nskillsets:
+						temp_avg_skillset = {}
+						temp_avg_skillset["skillset_name"] = skill["skillset_name"]
+						temp_avg_skillset["skillset_marks"] = 0
+						avg_marks.append(temp_avg_skillset)
+
+						temp_total_weightages = {}
+						temp_total_weightages["skillset_name"] = skill["skillset_name"]
+						temp_total_weightages["skillset_weightage"] = 0
+						total_weightages.append(temp_total_weightages)
 					for c_obj in candidate_marks_obj:
 						given_by = c_obj.marks_given_by
 						try:
+							# remove this
+							raise ValueError("This is awesome!!")
 							htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
-							htm_weightage_1_total = htm_weightage_1_total + htm_weightage_obj.init_qualify_ques_1_weightage
-							htm_weightage_2_total = htm_weightage_2_total + htm_weightage_obj.init_qualify_ques_2_weightage
-							htm_weightage_3_total = htm_weightage_3_total + htm_weightage_obj.init_qualify_ques_3_weightage
-							htm_weightage_4_total = htm_weightage_4_total + htm_weightage_obj.init_qualify_ques_4_weightage
-							htm_weightage_5_total = htm_weightage_5_total + htm_weightage_obj.init_qualify_ques_5_weightage
-							htm_weightage_6_total = htm_weightage_6_total + htm_weightage_obj.init_qualify_ques_6_weightage
-							htm_weightage_7_total = htm_weightage_7_total + htm_weightage_obj.init_qualify_ques_7_weightage
-							htm_weightage_8_total = htm_weightage_8_total + htm_weightage_obj.init_qualify_ques_8_weightage
+							weightage_count = 1
+							for idx in range(0, len(position_obj.nskillsets)):
+								total_weightages[idx]["skillset_weightage"] += htm_weightage_obj.weightages[idx]["skillset_weightage"]
+						except HTMWeightage.DoesNotExist:
+							for idx in range(0, len(open_position_obj.nskillsets)):
+								total_weightages[idx]["skillset_weightage"] += 10
 						except Exception as e:
-							htm_weightage_1_total = htm_weightage_1_total + 10
-							htm_weightage_2_total = htm_weightage_2_total + 10
-							htm_weightage_3_total = htm_weightage_3_total + 10
-							htm_weightage_4_total = htm_weightage_4_total + 10
-							htm_weightage_5_total = htm_weightage_5_total + 10
-							htm_weightage_6_total = htm_weightage_6_total + 10
-							htm_weightage_7_total = htm_weightage_7_total + 10
-							htm_weightage_8_total = htm_weightage_8_total + 10
+							print("some error occured while totaling weightages", str(e))
+							# remove this later
+							for idx in range(0, len(open_position_obj.nskillsets)):
+								total_weightages[idx]["skillset_weightage"] += 10
+					for c_obj in candidate_marks_obj:
+						given_by = c_obj.marks_given_by
+						# for calculating avg marks
+						try:
+							htm_weightage_obj = HTMsDeadline.objects.get(open_position=open_position_obj, htm__id=given_by)
+							htm_weightage = htm_weightage_obj.skillset_weightage
+						except HTMsDeadline.DoesNotExist:
+							htm_weightage = []
+							for idx in range(0, len(open_position_obj.nskillsets)):
+								htm_weightage.append({"skillset_weightage": 10})
+						except Exception as e:
+							print("some error occured while totaling weightages", str(e))
+							# remove this later
+							htm_weightage = []
+							for idx in range(0, len(open_position_obj.nskillsets)):
+								htm_weightage.append({"skillset_weightage": 10})
+						for count in range(0, len(open_position_obj.nskillsets)):
+							avg_marks[count]["skillset_marks"] += c_obj.nmarks[count]["skillset_marks"] * htm_weightage[count]["skillset_weightage"]
+					print("avg marks after initial cal")
+					print(avg_marks)
 					if candidate_marks_obj:
 						for c_obj in candidate_marks_obj:
 							given_by = c_obj.marks_given_by
@@ -697,7 +695,7 @@ class AllCandidateFeedback(APIView):
 						if marks_dict['init_qualify_ques_8'] not in [0, 0.0]:
 							count = count + open_position_obj.init_qualify_ques_weightage_8
 							avg_marks = avg_marks + marks_dict['init_qualify_ques_8'] * open_position_obj.init_qualify_ques_weightage_8
-						i['total_hiring_members'] = hiring_group_obj.members_list.all().count() - 1
+						i['total_hiring_members'] = open_position_obj.htms.all().count()
 						i['marks_given_by'] = candidate_marks_obj.count()
 						thumbs_up = 0
 						thumbs_down = 0
@@ -709,60 +707,27 @@ class AllCandidateFeedback(APIView):
 							i['final_avg_marks'] = 0.0
 						i['he_flag'] = None
 						i['flag_by_hiring_manager'] = []
-						hm_members_list = list(hiring_group_obj.members_list.all().values_list("id", flat=True))
-						try:
-							withdrawed_members = json.loads(open_position_obj.withdrawed_members)
-						except Exception as e:
-							withdrawed_members = []
-						hm_members_list = hm_members_list + withdrawed_members
 						i['like_count'] = 0
 						i['hold_count'] = 0
 						i['pass_count'] = 0
 						i['golden_glove_count'] = 0
-						if hiring_group_obj.hod_profile:
-							flag_data = get_htm_flag_data(hiring_group_obj.hod_profile, op_id, i["candidate_id"])
-							i['flag_by_hiring_manager'].append(flag_data)
-						else:
-							i['flag_by_hiring_manager'].append({})
-
-						hm_list = list(hiring_group_obj.members_list.all())
-						if hiring_group_obj.hr_profile in hm_list:
-							hm_list.remove(hiring_group_obj.hr_profile)
-						if hiring_group_obj.hod_profile in hm_list:
-							hm_list.remove(hiring_group_obj.hod_profile)
+						hm_list = open_position_obj.htms.all()
 						for hm in hm_list:
 							flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
 							i['flag_by_hiring_manager'].append(flag_data)
 						i['interviews_done'] = candidate_marks_obj.count()
 					else:
 						i['flag_by_hiring_manager'] = []
-						hm_members_list = list(hiring_group_obj.members_list.all().values_list("id", flat=True))
-						try:
-							withdrawed_members = json.loads(open_position_obj.withdrawed_members)
-						except Exception as e:
-							print(e)
-							withdrawed_members = []
-						hm_members_list = hm_members_list + withdrawed_members
 						i['marks'] = {}
 						i['final_avg_marks'] = 0
-						i['total_hiring_members'] = len(json.loads(hiring_group_obj.members)) - 1
+						i['total_hiring_members'] = open_position_obj.htms.all().count()
 						i['marks_given_by'] = 0
 						i['flag'] = 'Not Given'
 						i['like_count'] = 0
 						i['hold_count'] = 0
 						i['pass_count'] = 0
 						i['golden_glove_count'] = 0
-						hiring_manager_hod = hiring_group_obj.hod_profile
-						if hiring_group_obj.hod_profile:
-							flag_data = get_htm_flag_data(hiring_group_obj.hod_profile, op_id, i["candidate_id"])
-							i['flag_by_hiring_manager'].append(flag_data)
-						else:
-							i['flag_by_hiring_manager'].append({})
-						hm_list = list(hiring_group_obj.members_list.all())
-						if hiring_group_obj.hr_profile in hm_list:
-							hm_list.remove(hiring_group_obj.hr_profile)
-						if hiring_group_obj.hod_profile in hm_list:
-							hm_list.remove(hiring_group_obj.hod_profile)
+						hm_list = open_position_obj.htms.all()
 						for hm in hm_list:
 							flag_data = get_htm_flag_data(hm, op_id, i["candidate_id"])
 							i['flag_by_hiring_manager'].append(flag_data)
@@ -790,12 +755,11 @@ class GetSingleOpenPosition(APIView):
 				temp_dict["weightages"] = deadline.skillset_weightage
 				htm_deadlines.append(temp_dict)
 			data["htm_deadlines"] = htm_deadlines
-			data['withdrawed_members'] = json.loads(data['withdrawed_members'])
+			data['withdrawed_members'] = position_obj.withdrawed_members.all().values_list("id", flat=True)
 			if position_obj.kickoff_start_date:
 				data['kickoff_start_date'] = position_obj.kickoff_start_date.strftime("%m-%d-%Y")
 			if position_obj.target_deadline:
 				data['target_deadline'] = position_obj.target_deadline.strftime("%m-%d-%Y")
-				data['stages'] = json.loads(data['stages'])
 				now = datetime.today().date()
 				candidates_obj = []
 				for cao in CandidateAssociateData.objects.filter(open_position__id=op_id, accepted=True, withdrawed=False):
