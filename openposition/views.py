@@ -226,9 +226,9 @@ class OpenPositionView(APIView):
                     position_obj.save()
                     if htm_prof not in position_obj.htms.all():
                         position_obj.withdrawed_members.remove(htm_prof)
-                    HTMsDeadline.objects.create(open_position=position_obj, deadline=deadline.get('deadline'), htm=htm_prof, skillset_weightage=request.data.get("weightages"))
-            except:
-                pass
+                    HTMsDeadline.objects.create(open_position=position_obj, deadline=deadline.get('deadline'), htm=htm_prof, skillset_weightage=deadline.get("weightages"))
+            except Exception as e:
+                print(e)
             position_obj.save()
             response['msg'] = 'edited'
             return Response(response, status=status.HTTP_200_OK)
@@ -475,6 +475,41 @@ class AllCandidateFeedback(APIView):
 						except:
 							continue
 					temp_can['candidate_schedule'] = candidate_schedule_list
+					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=can.candidate_id, op_id=op_id)
+					marks_by_htms = []
+					# for calculation avg marks
+					avg_marks = []
+					total_weightages = []
+					for skill in open_position_obj.nskillsets:
+						temp_avg_skillset = {}
+						temp_avg_skillset["skillset_name"] = skill["skillset_name"]
+						temp_avg_skillset["skillset_marks"] = 0
+						avg_marks.append(temp_avg_skillset)
+
+						temp_total_weightages = {}
+						temp_total_weightages["skillset_name"] = skill["skillset_name"]
+						temp_total_weightages["skillset_weightage"] = 0
+						total_weightages.append(temp_total_weightages)
+					# calculates total weightage of htms
+					for c_obj in candidate_marks_obj:
+						given_by = c_obj.marks_given_by
+						try:
+							# remove this
+							raise ValueError("This is awesome!!")
+							htm_weightage_obj = HTMWeightage.objects.get(op_id=op_id, htm_id=given_by)
+							weightage_count = 1
+							for idx in range(0, len(position_obj.nskillsets)):
+								total_weightages[idx]["skillset_weightage"] += htm_weightage_obj.weightages[idx]["skillset_weightage"]
+						except HTMWeightage.DoesNotExist:
+							for idx in range(0, len(position_obj.nskillsets)):
+								total_weightages[idx]["skillset_weightage"] += 10
+						except Exception as e:
+							print("some error occured while totaling weightages", str(e))
+							# remove this later
+							for idx in range(0, len(position_obj.nskillsets)):
+								total_weightages[idx]["skillset_weightage"] += 10
+					# part of avg marks calculation algo
+					
 			for i in data:
 				caobj = CandidateAssociateData.objects.get(open_position=open_position_obj, candidate__candidate_id=i["candidate_id"])
 				# Additin Profile Picture
@@ -573,15 +608,6 @@ class AllCandidateFeedback(APIView):
 				else:
 					# Sending data as HM, HR, SM, CA or SA
 					# Get all scheduled interviews for the candidate
-					HM_vote = {}
-					members_list = open_position_obj.htms.all().values_list("id", flat=True)
-					candidate_marks_obj = CandidateMarks.objects.filter(candidate_id=i['candidate_id'], op_id=op_id, marks_given_by__in=members_list)
-					candidate_status_HM = CandidateStatus.objects.filter(candidate_id=i['candidate_id'], op_id=op_id)
-					if candidate_status_HM:
-						HM_vote["shortlist_status"] = candidate_status_HM[0].shortlist_status
-						HM_vote["make_offer_status"] = candidate_status_HM[0].make_offer_status
-						HM_vote["finall_selection_status"] = candidate_status_HM[0].finall_selection_status
-						i["vote_by_HM"]=HM_vote
 					# marks calculation
 					avg_marks = []
 					total_weightages = []
