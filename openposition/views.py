@@ -975,8 +975,8 @@ class GetAllOPData(APIView):
 					temp_can["eval_notes"] = eval_data
 					temp_can["offers"] = Offered.objects.filter(candidate_id=can.candidate_id).count()
 					temp_can["thumbs_up_count"] = CandidateMarks.objects.filter(candidate_id=can.candidate_id, thumbs_up=True).count()
-					temp_can["thumbs_down_count"] = Offered.objects.filter(candidate_id=can.candidate_id, thumbs_down=True).count()
-					temp_can["golden_glove_count"] = Offered.objects.filter(candidate_id=can.candidate_id, golden_gloves=True).count()
+					temp_can["thumbs_down_count"] = CandidateMarks.objects.filter(candidate_id=can.candidate_id, thumbs_down=True).count()
+					temp_can["golden_glove_count"] = CandidateMarks.objects.filter(candidate_id=can.candidate_id, golden_gloves=True).count()
 					temp_can["interviews_last_30"] = Interview.objects.filter(candidate=can).count()
 					temp_can["profile_photo"] = get_candidate_profile(can)
 					candidate_schedule_list = []
