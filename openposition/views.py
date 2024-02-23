@@ -980,10 +980,7 @@ class GetAllOPData(APIView):
 					temp_can["eval_notes"] = eval_data
 					temp_can["offers"] = Offered.objects.filter(candidate_id=can.candidate_id).count()
 					temp_can["interviews_last_30"] = Interview.objects.filter(candidate=can).count()
-					if can.linkedin_data.get("profile_pic_url"):
-						temp_can["profile_photo"] = can.linkedin_data.get("profile_pic_url")
-					else:
-						temp_can["profile_photo"] = can.profile_photo
+					temp_can["profile_photo"] = get_candidate_profile(can)
 					# get hire status
 					if Hired.objects.filter(candidate_id=can.candidate_id, op_id=op_id):
 						temp_can['isHired'] = True
