@@ -402,6 +402,9 @@ class GetPositionSummary(APIView):
 				response["position_status"] = "archieved"
 			if open_position.filled:
 				response["position_status"] = "completed"
+			response["full_kickoff"] = open_position.kickoff_start_date.strftime("%m/%d/%Y")
+			response["full_sourcing"] = open_position.sourcing_deadline.strftime("%m/%d/%Y")
+			response["full_target"] = open_position.target_deadline.strftime("%m/%d/%Y")
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
