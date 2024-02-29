@@ -155,6 +155,7 @@ class CandidateAssociateData(models.Model):
     association_date = models.DateField(default=None, null=True, blank=True)
     # None - Requested, True - Acceppted, False - Rejected
     accepted = models.BooleanField(default=None, null=True, blank=True)
+    modification = models.BooleanField(default=False)
     withdrawed = models.BooleanField(default=False)
 
 

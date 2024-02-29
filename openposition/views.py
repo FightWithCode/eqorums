@@ -1086,3 +1086,62 @@ class GetAllOPData(APIView):
 		except Exception as e:
 			return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
+class GetSubmittedCandidates(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def get(self, request, op_id):
+		response = {}
+		try:
+			cao_objs = CandidateAssociateData.objects.filter(open_position__id=op_id)
+			data = []
+			for cao in cao_objs:
+				temp_dict = {}
+				temp_dict["id"] = cao.id
+				temp_dict["candidate_id"] = cao.candidate.candidate_id
+				temp_dict["name"] = cao.candidate.user.get_full_name()
+				temp_dict["submission_date"] = cao.association_date
+				temp_dict["status"] = "Accepted" if cao.accepted else "Invited" if cao.accepted is None else "Submission Rejected"
+				if cao.modification:
+					temp_dict["status"] = "Modification"
+				
+				interviews = Interview.objects.filter(candidate=cao.candidate).order_by("-interview_date_time")
+				if interviews.last():
+					temp_dict["last_interview"] = interviews.last().interview_date_time.strftime("%d %b %Y")
+				temp_dict["total_interview"] = interviews.count()
+				temp_dict["email"] = cao.candidate.email
+				data.append(temp_dict)
+			response["data"] = data
+			response["msg"] = "success"
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response["msg"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubmitCandidates(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def post(self, request, op_id):
+		response = {}
+		try:
+			op_obj = OpenPosition.objects.get(id=op_id)
+			candidates_not_found = []
+			already_associated = []
+			for candidate in request.data.get("candidate_ids"):
+				try:
+					candidate_obj = Candidate.objects.get(candidate_id=candidate)
+					obj, created = CandidateAssociateData.objects.get_or_create(open_position=op_obj, candidate=candidate_obj)
+					if not created:
+						already_associated.append(candidate)
+				except Candidate.DoesNotExist:
+					candidates_not_found.append(candidate)
+				except Exception as e:
+					response["candidate_associated_error"] = str(e)
+			response["msg"] = "candidate associated"
+			response["candidates_not_found"] = candidates_not_found
+			response["already_associated"] = already_associated
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response["msg"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)

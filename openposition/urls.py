@@ -35,4 +35,14 @@ urlpatterns = [
         views.GetAllOPData.as_view(),
         name="get-all-opdata"
     ),
+    path(
+        "get-submitted-candidates/<int:op_id>",
+        views.GetSubmittedCandidates.as_view(),
+        name="get-submitted-candidates"
+    ),
+    path(
+        "submit-candidates/<int:op_id>",
+        views.SubmitCandidates.as_view(),
+        name="submit-candidates"
+    ),
 ]
