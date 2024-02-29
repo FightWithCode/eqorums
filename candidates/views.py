@@ -59,11 +59,6 @@ class SearchCandidateView(APIView):
 				candidate_data = CandidateSerializer(queryset, many=True).data
 			else:
 				if job_title:
-					# candidate_ids = []
-					# for op in OpenPosition.objects.filter(position_title__icontains=job_title):
-					# 	for candidate in queryset:
-					# 		if op.id in json.loads(candidate.associated_op_ids):
-					# 			candidate_ids.append(candidate.candidate_id)
 					queryset = queryset.filter(job_title__icontains=job_title)
 				if email:
 					queryset = queryset.filter(email__icontains=email)
@@ -129,18 +124,6 @@ class SearchCandidateView(APIView):
 								candidate_ids.append(candidate.candidate_id)
 					queryset = queryset.filter(candidate_id__in=candidate_ids)
 				# Apply filters
-				"""Exclude candidate old
-				# exclude_withdrawn_candidate = request.data.get("exclude_withdrawn_candidate")
-				# candidate_ids = []
-				# if exclude_withdrawn_candidate:
-				# 	for i in queryset:
-				# 		print(i.name)
-				# 		if WithdrawCandidateData.objects.filter(candidate=i):
-				# 			pass
-				# 		else:
-				# 			candidate_ids.append(i.candidate_id)
-				# 	queryset = queryset.filter(candidate_id__in=candidate_ids)
-				"""
 				if request.data.get("recentlyUpdated"):
 					filter_time = datetime.now() - timedelta(hours=request.data.get("recentlyUpdated"))
 					queryset = queryset.filter(updated_at__gte=filter_time)
