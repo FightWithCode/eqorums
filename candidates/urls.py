@@ -15,4 +15,9 @@ urlpatterns = [
         views.AllCandidateDataView.as_view(),
         name="get-all-candidates",
     ),
+    path(
+        "get-all-candidates",
+        views.CandidateListForSubmission.as_view(),
+        name="get-all-candidates",
+    ),
 ]

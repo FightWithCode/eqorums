@@ -227,3 +227,31 @@ class AllCandidateDataView(APIView):
 			response['error'] = str(e)
 			return Response(response, status=status.HTTP_200_OK)
 
+
+class CandidateListForSubmission(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def get(self, request):
+		try:
+			response = {}
+			data = []
+			if request.user.profile.is_ca or request.user.profile.is_sm:
+				queryset = Candidate.objects.filter(Q(created_by_client=request.user.profile.client)|Q(created_by_client=0))
+			else:
+				queryset = Candidate.objects.all()
+			for i in queryset:
+				temp_dict = {}
+				temp_dict['candidate_id'] = i.candidate_id
+				temp_dict['first_name'] = i.name
+				temp_dict["last_name"] = i.last_name
+				temp_dict["email"] = i.email
+				temp_dict["full_name"] = i.user.get_full_name()
+				temp_dict['skillsets'] = i.skillsets
+				temp_dict['profile_photo'] = get_candidate_profile(i)
+				data.append(temp_dict)
+			response['data'] = data
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response = {}
+			response['error'] = str(e)
+			return Response(response, status=status.HTTP_200_OK)
