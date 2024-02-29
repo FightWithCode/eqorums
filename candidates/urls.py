@@ -16,8 +16,8 @@ urlpatterns = [
         name="get-all-candidates",
     ),
     path(
-        "get-all-candidates",
+        "get-candidate-for-submission",
         views.CandidateListForSubmission.as_view(),
-        name="get-all-candidates",
+        name="get-candidate-for-submission",
     ),
 ]
