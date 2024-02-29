@@ -235,7 +235,7 @@ class CandidateListForSubmission(APIView):
 		try:
 			response = {}
 			data = []
-			if request.user.profile.is_ca or request.user.profile.is_sm:
+			if "is_ca" in request.user.profile.roles or "is_sm" in request.user.profile.roles:
 				queryset = Candidate.objects.filter(Q(created_by_client=request.user.profile.client)|Q(created_by_client=0))
 			else:
 				queryset = Candidate.objects.all()
