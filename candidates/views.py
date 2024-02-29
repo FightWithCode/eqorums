@@ -36,6 +36,7 @@ class SearchCandidateView(APIView):
 			offer_status = request.data.get("offer_status")
 			hired_status = request.data.get("hired_status")
 			pass_or_hold = request.data.get("pass_or_hold")
+			email = request.data.get("email")
 			thumbs_up = None
 			thumbs_down = None
 			golden_gloves = None
@@ -64,6 +65,8 @@ class SearchCandidateView(APIView):
 					# 		if op.id in json.loads(candidate.associated_op_ids):
 					# 			candidate_ids.append(candidate.candidate_id)
 					queryset = queryset.filter(job_title__icontains=job_title)
+				if email:
+					queryset = queryset.filter(email__icontains=email)
 				if first_name:
 					queryset = queryset.filter(name__icontains=first_name)
 				if last_name:
