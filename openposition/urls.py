@@ -41,8 +41,8 @@ urlpatterns = [
         name="get-submitted-candidates"
     ),
     path(
-        "submit-candidates/<int:op_id>",
-        views.SubmitCandidates.as_view(),
+        "submit-candidates/<int:op_id>/<int:candidate>",
+        views.SubmitCandidate.as_view(),
         name="submit-candidates"
     ),
 ]

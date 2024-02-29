@@ -1119,28 +1119,36 @@ class GetSubmittedCandidates(APIView):
 			return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SubmitCandidates(APIView):
+class SubmitCandidate(APIView):
 	permission_classes = (permissions.IsAuthenticated,)
 
-	def post(self, request, op_id):
+	def post(self, request, op_id, candidate):
 		response = {}
 		try:
 			op_obj = OpenPosition.objects.get(id=op_id)
-			candidates_not_found = []
-			already_associated = []
-			for candidate in request.data.get("candidate_ids"):
-				try:
-					candidate_obj = Candidate.objects.get(candidate_id=candidate)
-					obj, created = CandidateAssociateData.objects.get_or_create(open_position=op_obj, candidate=candidate_obj)
-					if not created:
-						already_associated.append(candidate)
-				except Candidate.DoesNotExist:
-					candidates_not_found.append(candidate)
-				except Exception as e:
-					response["candidate_associated_error"] = str(e)
+			try:
+				candidate_obj = Candidate.objects.get(candidate_id=candidate)
+				obj, created = CandidateAssociateData.objects.get_or_create(open_position=op_obj, candidate=candidate_obj)
+				if not created:
+					response["msg"] = "candidate already associated"
+					return Response(response, status=status.HTTP_200_OK)
+			except Candidate.DoesNotExist:
+				response["msg"] = "candidate not found"
+				return Response(response, status=status.HTTP_400_BAD_REQUEST)
+			except Exception as e:
+				response["candidate_associated_error"] = str(e)
+				return Response(response, status=status.HTTP_400_BAD_REQUEST)
 			response["msg"] = "candidate associated"
-			response["candidates_not_found"] = candidates_not_found
-			response["already_associated"] = already_associated
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response["msg"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+	
+	def delete(self, request, op_id, candidate):
+		response = {}
+		try:
+			CandidateAssociateData.objects.filter(open_position__id=op_id, candidate__candidate_id=candidate).delete()
+			response["msg"] = "candidate disassociated"
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
 			response["msg"] = str(e)
