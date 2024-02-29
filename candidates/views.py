@@ -1,5 +1,6 @@
 # python imports
 import json
+import string
 from datetime import datetime
 from datetime import timedelta
 # django import
@@ -14,10 +15,13 @@ from candidates.models import Candidate
 from openposition.models import (
 	CandidateMarks,
 	Hired,
-	Offered
+	Offered,
+	CandidateAssociateData
 )
 # serializer imports
 from candidates.serializers import CandidateSerializer
+# utils import
+from candidates.utils import get_candidate_profile
 
 
 class SearchCandidateView(APIView):
@@ -168,3 +172,58 @@ class SearchCandidateView(APIView):
 			response = {}
 			response['error'] = str(e)
 			return Response(response, status=status.HTTP_200_OK)
+
+
+class AllCandidateDataView(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def get(self, request):
+		try:
+			response = {}
+			data = {}
+			for i in string.ascii_uppercase:
+				data[i] = []
+			if request.user.is_superuser or "is_ae" in request.user.profile.roles:
+				queryset = Candidate.objects.all()
+			else:
+				queryset = Candidate.objects.filter(Q(created_by_client=request.user.profile.client)|Q(created_by_client=0))				
+			for i in queryset.order_by('last_name'):
+				temp_dict = {}
+				temp_dict['candidate_id'] = i.candidate_id
+				temp_dict['name'] = i.name + ' ' + i.last_name
+				temp_dict['last_name'] = i.last_name
+				application_count = CandidateAssociateData.objects.filter(candidate=i, accepted=True, withdrawed=False).count()
+				temp_dict['applications'] = application_count
+				temp_dict['status'] = 'Open'
+				temp_dict['phone'] = i.phone_number
+				temp_dict['email'] = i.email
+				temp_dict['profile_photo'] = get_candidate_profile(i)
+				temp_dict['current_position'] = i.job_title
+				temp_dict['location'] = i.location
+				temp_dict['skillsets'] = i.skillsets
+				temp_dict['linkedin_data'] = i.linkedin_data
+				temp_dict['currency'] = i.currency
+				temp_dict['salaryRange'] = i.salaryRange
+				temp_dict['desired_work_location'] = i.desired_work_location
+				overallscore = 0
+				for j in CandidateMarks.objects.filter(candidate_id=i.candidate_id):
+					avg_marks = (j.criteria_1_marks + j.criteria_2_marks + j.criteria_3_marks + j.criteria_4_marks + j.criteria_5_marks + j.criteria_6_marks + j.criteria_7_marks + j.criteria_8_marks) / 8
+					overallscore = overallscore + avg_marks
+				if application_count == 0 or CandidateMarks.objects.filter(candidate_id=i.candidate_id).count() == 0:
+					temp_dict['overallscore'] = 0
+				else:
+					temp_dict['overallscore'] = round(overallscore / (application_count * CandidateMarks.objects.filter(candidate_id=i.candidate_id).count()), 2)
+				try:
+					data[temp_dict['last_name'][0].upper()].append(temp_dict)
+					l = data[temp_dict['last_name'][0].upper()]
+					sorted_list = sorted(l, key=lambda d: d['last_name'], reverse=False)
+					data[temp_dict['last_name'][0].upper()] = sorted_list
+				except Exception as e:
+					data[temp_dict['last_name'][0].upper()] = [temp_dict]
+			response['data'] = data
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response = {}
+			response['error'] = str(e)
+			return Response(response, status=status.HTTP_200_OK)
+

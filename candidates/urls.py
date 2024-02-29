@@ -10,4 +10,9 @@ urlpatterns = [
         views.SearchCandidateView.as_view(),
         name="search-candidates",
     ),
+    path(
+        "get-all-candidates",
+        views.AllCandidateDataView.as_view(),
+        name="get-all-candidates",
+    ),
 ]
