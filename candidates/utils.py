@@ -36,7 +36,7 @@ def get_current_submission_status(candidate, op_obj):
             result = "modification"
         elif cao_obj.accepted:
             result = "accepted"
-        elif not cao_obj.accepted:
+        elif cao_obj.accepted == False:
             result = "rejected"
         else:
             result = "invited"
