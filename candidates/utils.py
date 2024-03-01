@@ -1,5 +1,5 @@
 from candidates.models import Candidate
-from openposition.models import CandidateMarks
+from openposition.models import CandidateMarks, CandidateAssociateData
 
 
 def get_candidate_profile(instance):
@@ -27,3 +27,19 @@ def get_offer_no(instance):
 
 def get_pass_no(instance):
     return CandidateMarks.objects.filter(candidate_id=instance.candidate_id, op_id=instance.candidate_id, thumbs_down=True).count()
+
+
+def get_current_submission_status(candidate, op_obj):
+    try:
+        cao_obj = CandidateAssociateData.objects.get(candidate=candidate, open_position=op_obj)
+        if cao_obj.modification:
+            result = "modification"
+        elif cao_obj.accepted:
+            result = "accepted"
+        elif not cao_obj.accepted:
+            result = "rejected"
+        else:
+            result = "invited"
+        return result
+    except:
+         return None

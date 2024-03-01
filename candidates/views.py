@@ -13,15 +13,19 @@ from rest_framework.views import APIView
 # models imports
 from candidates.models import Candidate
 from openposition.models import (
+	CandidateAssociateData,
 	CandidateMarks,
 	Hired,
 	Offered,
-	CandidateAssociateData
+	OpenPosition
 )
 # serializer imports
 from candidates.serializers import CandidateSerializer
 # utils import
-from candidates.utils import get_candidate_profile
+from candidates.utils import (
+	get_candidate_profile, 
+	get_current_submission_status
+)
 
 
 class SearchCandidateView(APIView):
@@ -231,8 +235,9 @@ class AllCandidateDataView(APIView):
 class CandidateListForSubmission(APIView):
 	permission_classes = (permissions.IsAuthenticated,)
 
-	def get(self, request):
+	def get(self, request, op_id):
 		try:
+			op_obj = OpenPosition.objects.get(id=op_id)
 			response = {}
 			data = []
 			if "is_ca" in request.user.profile.roles or "is_sm" in request.user.profile.roles:
@@ -240,6 +245,7 @@ class CandidateListForSubmission(APIView):
 			else:
 				queryset = Candidate.objects.all()
 			for i in queryset:
+				
 				temp_dict = {}
 				temp_dict['candidate_id'] = i.candidate_id
 				temp_dict['first_name'] = i.name
@@ -248,6 +254,7 @@ class CandidateListForSubmission(APIView):
 				temp_dict["full_name"] = i.user.get_full_name()
 				temp_dict['skillsets'] = i.skillsets
 				temp_dict['profile_photo'] = get_candidate_profile(i)
+				temp_dict["status"] = get_current_submission_status(i, op_obj)
 				data.append(temp_dict)
 			response['data'] = data
 			return Response(response, status=status.HTTP_200_OK)
