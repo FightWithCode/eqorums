@@ -1138,6 +1138,19 @@ class SubmitCandidate(APIView):
 			except Exception as e:
 				response["candidate_associated_error"] = str(e)
 				return Response(response, status=status.HTTP_400_BAD_REQUEST)
+			subject = "You've been added to a position! - Qorums"
+			try:
+				reply_to = request.user.profile.email
+				sender_name = request.user.get_full_name()
+			except:
+				reply_to = 'noreply@qorums.com'
+				sender_name = 'No Reply'
+			
+			html_content = "You have been added to a position - {}".format(op_obj.position_title)
+			try:
+				tasks.submited_email.delay(subject, html_content, 'html', [candidate_obj.email], reply_to, sender_name)
+			except Exception as e:
+				return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 			response["msg"] = "candidate associated"
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
