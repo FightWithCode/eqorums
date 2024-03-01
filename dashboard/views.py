@@ -240,9 +240,10 @@ class AccountManagerView(APIView):
 
 	def post(self, request):
 		try:
+			email = request.data.get("email")
 			if User.objects.filter(username=request.data.get("username")).exists():
 				return Response({'message': 'Username already exists!'}, status=status.HTTP_400_BAD_REQUEST)
-			if Profile.objects.filter(email=request.data.get("email")).exists() or Candidate.objects.filter(email=email).exists():
+			if Profile.objects.filter(email=email).exists() or Candidate.objects.filter(email=email).exists():
 				return Response({'message': 'Email already exists!'}, status=status.HTTP_400_BAD_REQUEST)
 			username = request.data.get("username")
 			password = request.data.get("password")
@@ -252,7 +253,7 @@ class AccountManagerView(APIView):
 			user.set_password(password)
 			phone_number = request.data.get("phone_number")
 			skype_id = request.data.get("skype_id")
-			email = request.data.get("email")
+			
 			try:
 				profile_photo = request.FILES['profile_photo']
 			except Exception as e:
