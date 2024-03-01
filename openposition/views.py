@@ -1148,7 +1148,7 @@ class SubmitCandidate(APIView):
 			
 			html_content = "You have been added to a position - {}".format(op_obj.position_title)
 			try:
-				tasks.submited_email.delay(subject, html_content, 'html', [candidate_obj.email], reply_to, sender_name)
+				tasks.submited_email.delay(obj.id, subject, html_content, 'html', [candidate_obj.email], reply_to, sender_name)
 			except Exception as e:
 				return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 			response["msg"] = "candidate associated"

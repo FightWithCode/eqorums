@@ -23,7 +23,8 @@ from django.conf import settings
 # models import
 from openposition.models import (
 	OpenPosition,
-	Interview
+	Interview,
+	CandidateAssociateData
 )
 from dashboard.models import Profile, EmailTemplate
 from candidates.models import Candidate
@@ -71,33 +72,37 @@ def send(subject, html_content, content_type, recipient_list, reply_to, sender_n
 
 
 @shared_task()
-def submited_email(subject, html_content, content_type, recipient_list, reply_to, sender_name, filename_event=None, cc=""):
+def submited_email(cao_id, subject, html_content, content_type, recipient_list, reply_to, sender_name, filename_event=None, cc=""):
 	sleep(180)
-	recipients = ", ".join(recipient_list)
-	port = 465  # For SSL
-	password = settings.EMAIL_HOST_PASSWORD #sender email password
-	sender_email = "noreply@qorums.com"
-	message = MIMEMultipart('alternative')
-	message['Subject'] = subject
-	message['To'] = recipients
-	message['From'] = formataddr(("{} - Qorums Notification".format(sender_name), sender_email))
-	message['Reply-To'] = reply_to
-	message["Cc"] = cc
-	message.add_header("X-Priority","1 (High)")
-	if content_type == 'html':
-		message.attach(MIMEText(html_content, 'html'))
-	else:
-		message.attach(MIMEText(html_content))
-	# print(os.getcwd())
-	if filename_event:
-		part = MIMEBase('application', "octet-stream")
-		part.set_payload(open('/home/ubuntu/ts_2_backend/'+'invite.ics', "rb").read())
-		part.add_header('Content-Disposition', 'attachment; filename="invite.ics"')
-		message.attach(part)
-	server = smtplib.SMTP_SSL("smtp.gmail.com", port)
-	server.login(sender_email, password)
-	server.sendmail(sender_email, recipient_list, message.as_string())
-	server.quit()
+	try:
+		CandidateAssociateData.objects.get(id=cao_id)
+		recipients = ", ".join(recipient_list)
+		port = 465  # For SSL
+		password = settings.EMAIL_HOST_PASSWORD #sender email password
+		sender_email = "noreply@qorums.com"
+		message = MIMEMultipart('alternative')
+		message['Subject'] = subject
+		message['To'] = recipients
+		message['From'] = formataddr(("{} - Qorums Notification".format(sender_name), sender_email))
+		message['Reply-To'] = reply_to
+		message["Cc"] = cc
+		message.add_header("X-Priority","1 (High)")
+		if content_type == 'html':
+			message.attach(MIMEText(html_content, 'html'))
+		else:
+			message.attach(MIMEText(html_content))
+		# print(os.getcwd())
+		if filename_event:
+			part = MIMEBase('application', "octet-stream")
+			part.set_payload(open('/home/ubuntu/ts_2_backend/'+'invite.ics', "rb").read())
+			part.add_header('Content-Disposition', 'attachment; filename="invite.ics"')
+			message.attach(part)
+		server = smtplib.SMTP_SSL("smtp.gmail.com", port)
+		server.login(sender_email, password)
+		server.sendmail(sender_email, recipient_list, message.as_string())
+		server.quit()
+	except:
+		pass
 
 
 @shared_task()
