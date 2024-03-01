@@ -249,6 +249,8 @@ class AccountManagerView(APIView):
 			phone_number = request.data.get("phone_number")
 			skype_id = request.data.get("skype_id")
 			email = request.data.get("email")
+			if User.objects.filter(username=username).exists():
+				return Response({'message': 'Username already exists!'}, status=status.HTTP_400_BAD_REQUEST)
 			if Profile.objects.filter(email=email).exists() or Candidate.objects.filter(email=email).exists():
 				return Response({'message': 'Email already exists!'}, status=status.HTTP_400_BAD_REQUEST)
 			try:
@@ -361,6 +363,8 @@ class HiringManagerView(APIView):
 
 	def post(self, request):
 		try:
+			if User.objects.filter(username=request.data.get("username")).exists():
+				return Response({'message': 'Username already exists!'}, status=status.HTTP_400_BAD_REQUEST)
 			if User.objects.filter(email=request.data.get("email")) or Profile.objects.filter(email=request.data.get("email")) or Candidate.objects.filter(email=request.data.get("email")):
 				return Response({'msg': "Email already exists."}, status=status.HTTP_200_OK)
 			username = request.data.get("username")
