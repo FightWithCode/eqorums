@@ -13151,7 +13151,7 @@ class UserList(APIView):
 			elif user.is_superuser:
 				user_objs = User.objects.filter(profile__isnull=False)
 			else:
-				user_objs = User.objects.filter(Q(profile__client=request.user.profile.client) | Q(candidate__created_by_client__id__in=int(request.user.profile.client)) | Q(profile__isnull=False))
+				user_objs = User.objects.filter(Q(profile__client=request.user.profile.client) | Q(candidate__created_by_client__id=int(request.user.profile.client)) | Q(profile__isnull=False))
 			data = []
 			for user in user_objs:
 				data.append(

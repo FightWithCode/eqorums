@@ -780,4 +780,9 @@ urlpatterns = [
         views.AllCandidateFeedback.as_view(),
         name="all-candidate-feedback"
     ),
+    path(
+        "users-list",
+        views.UserList.as_view(),
+        name="users-list"
+    ),
 ]
