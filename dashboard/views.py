@@ -13135,3 +13135,24 @@ class GetAllClientsList(APIView):
 			response["msg"] = "error"
 			response["error"] = str(e)
 			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserList(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def get(self, request):
+		response = {}
+		try:
+			user = request.user
+			if "is_ae" in user.profile.roles:
+				clients_objs = Client.objects.filter(id__in=json.loads(user.profile.client)).order_by('-updated_at')
+			elif user.is_superuser:
+				clients_objs = Client.objects.filter(disabled=False).order_by('-updated_at')
+			data = CustomClientSerializer(clients_objs)
+			response["msg"] = "success"
+			response["data"] = data
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response["msg"] = "error"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
