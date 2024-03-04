@@ -67,7 +67,8 @@ class Profile(models.Model):
     iotum_host_id = models.CharField(max_length=50, default=None, blank=True, null=True)
     # stripe customer id
     customer_id = models.CharField(max_length=50, default=None, blank=True, null=True)
-
+    created_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return self.user.first_name + ' ' + self.user.last_name
 

@@ -13145,11 +13145,28 @@ class UserList(APIView):
 		try:
 			user = request.user
 			if "is_ae" in user.profile.roles:
-				clients_objs = Client.objects.filter(id__in=json.loads(user.profile.client)).order_by('-updated_at')
+				c_ids = json.loads(user.profile.client)
+				sc_ids = [str(i) for i in c_ids]
+				user_objs = User.objects.filter(Q(profile__client__in=sc_ids) | Q(candidate__created_by_client__id__in=c_ids) | Q(profile__isnull=False))
 			elif user.is_superuser:
-				clients_objs = Client.objects.filter(disabled=False).order_by('-updated_at')
-			data = CustomClientSerializer(clients_objs)
-			response["msg"] = "success"
+				user_objs = User.objects.filter(profile__isnull=False)
+			else:
+				user_objs = User.objects.filter(Q(profile__client=request.user.profile.client) | Q(candidate__created_by_client__id__in=int(request.user.profile.client)) | Q(profile__isnull=False))
+			data = []
+			for user in user_objs:
+				data.append(
+					{
+						"name": user.get_full_name(),
+						"roles": user.profile.roles[0] if user.profile.roles else "is_candidate",
+						"user_id": user.profile.id,
+						"user_since": user.profile.created_at.strftime("%m %d, %Y"),
+						"last_activity": "Some Activity",
+						"open_position": 1,
+						"email": user.profile.email
+					}
+				)
+
+			response["msg"] = "users fetched"
 			response["data"] = data
 			return Response(response, status=status.HTTP_200_OK)
 		except Exception as e:
