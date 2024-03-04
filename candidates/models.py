@@ -17,7 +17,7 @@ class Candidate(models.Model):
     """
     old_id = models.IntegerField(default=0)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="candidate")
-    user_ref = models.One(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_ref", null=True, blank=True, default=None)
+    user_ref = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_ref", null=True, blank=True, default=None)
     created_by_client = models.ForeignKey(Client, default=None, null=True, blank=True, on_delete=models.SET_NULL)
     username = models.CharField(max_length=255, default='None')
     key = models.CharField(max_length=255, default='None')
