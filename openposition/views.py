@@ -1104,7 +1104,8 @@ class GetSubmittedCandidates(APIView):
 				temp_dict["status"] = "Accepted" if cao.accepted else "Invited" if cao.accepted is None else "Submission Rejected"
 				if cao.modification:
 					temp_dict["status"] = "Modification"
-				if CandidateMarks.objects.filter(candidate_id=cao.candidate.candidate_id, op_id=cao.open_position.id)
+				if CandidateMarks.objects.filter(candidate_id=cao.candidate.candidate_id, op_id=cao.open_position.id):
+					temp_dict["status"] = "Assessed"
 				interviews = Interview.objects.filter(candidate=cao.candidate).order_by("-interview_date_time")
 				if interviews.last():
 					temp_dict["last_interview"] = interviews.last().interview_date_time.strftime("%d %b %Y")
