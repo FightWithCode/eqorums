@@ -402,3 +402,14 @@ class StripeWebhookData(models.Model):
     data = models.JSONField()
     created = models.DateTimeField(auto_now=True)
     updated = models.DateTimeField(auto_now_add=True)
+
+
+class UserActivity(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    activity_name = models.CharField(max_length=255)
+    resp_data = models.JSONField(default=get_json_default)
+    status = models.IntegerField(default=200)
+    created_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self, obj):
+        return f"{self.user.get_full_name()}'s activity of {self.activity_name} on {self.created_at.strftime('%b %d, %Y')}"

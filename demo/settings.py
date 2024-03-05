@@ -89,6 +89,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'drf_api_logger.middleware.api_logger_middleware.APILoggerMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'demo.custom_middlewares.UserLogMiddleware'
 ]
 
 ROOT_URLCONF = 'demo.urls'

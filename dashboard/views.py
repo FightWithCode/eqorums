@@ -114,12 +114,9 @@ from openposition.models import (
 from hiringgroup.models import HiringGroup
 from .models import (
 	Profile,
-	PositionTitle,
 	QualifyingQuestion,
-	OpenPositionStageCompletion,
 	# Department,
 	InterviewSchedule,
-	TempCandidate,
 	CandidatePositionDetails,
 	AskedNotification,
 	Hired,
@@ -136,7 +133,8 @@ from .models import (
 	ExtraAccountsPrice,
 	BillingDetail,
 	StripePayments,
-	StripeWebhookData
+	StripeWebhookData, 
+	UserActivity,
 )
 from candidates.models import Candidate
 
@@ -13154,18 +13152,24 @@ class UserList(APIView):
 				user_objs = User.objects.filter(Q(profile__client=request.user.profile.client) | Q(candidate__created_by_client__id=int(request.user.profile.client)) | Q(profile__isnull=False))
 			data = []
 			for user in user_objs:
-				data.append(
-					{
-						"name": user.get_full_name(),
-						"roles": user.profile.roles[0] if user.profile.roles else "is_candidate",
-						"user_id": user.profile.id,
-						"user_since": user.profile.created_at.strftime("%m %d, %Y"),
-						"last_activity": "Some Activity",
-						"open_position": 1,
-						"email": user.profile.email
-					}
-				)
-
+				temp_dict = {}
+				temp_dict["name"] = user.get_full_name()
+				if user.profile.roles:
+					temp_dict["role"] = user.profile.roles[0]
+					temp_dict["open_position"] = OpenPosition.objects.filter(drafted=False, archieved=False, filled=False, trashed=False, htms=user.profile).count()
+				elif user.profile.is_candidate:
+					temp_dict["role"] = "is_candidate"
+					temp_dict["open_position"] = CandidateAssociateData.objects.filter(candidate__user=user).count()
+				else:
+					continue
+				temp_dict["user_id"] = user.profile.id
+				temp_dict["user_since"] = user.profile.created_at.strftime("%b %d, %Y")
+				if UserActivity.objects.filter(user=user).order_by("-created_at").first():
+					temp_dict["last_activity"] = UserActivity.objects.filter(user=user).order_by("-created_at").first().activity_name
+				else:
+					temp_dict["last_activity"] = None
+				temp_dict["email"] = user.candidate.first().email if user.profile.is_candidate else user.profile.email
+				data.append(temp_dict)
 			response["msg"] = "users fetched"
 			response["data"] = data
 			return Response(response, status=status.HTTP_200_OK)
