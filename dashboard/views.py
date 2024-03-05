@@ -13168,7 +13168,7 @@ class UserList(APIView):
 					temp_dict["last_activity"] = UserActivity.objects.filter(user=user).order_by("-created_at").first().activity_name
 				else:
 					temp_dict["last_activity"] = None
-				temp_dict["email"] = user.candidate.first().email if user.profile.is_candidate else user.profile.email
+				temp_dict["email"] = user.candidate.first().email if user.candidate.first() else user.profile.email
 				data.append(temp_dict)
 			response["msg"] = "users fetched"
 			response["data"] = data
