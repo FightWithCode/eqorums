@@ -1,13 +1,16 @@
+# python imports
+import uuid
+import secrets
+import json
+import random
+from datetime import date
+from datetime import datetime
+# django imports
 from django.db import models
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db.models.signals import post_save
-import secrets
-import json
-from datetime import date
 from django.conf import settings
-import random
-from datetime import datetime
 
 
 EMAIL_TYPES = (
@@ -411,5 +414,17 @@ class UserActivity(models.Model):
     status = models.IntegerField(default=200)
     created_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self, obj):
+    def __str__(self):
         return f"{self.user.get_full_name()}'s activity of {self.activity_name} on {self.created_at.strftime('%b %d, %Y')}"
+
+
+class InvitedUser(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    email = models.CharField(max_length=255, unique=True)
+    client = models.ForeignKey("clients.Client", on_delete=models.CASCADE)
+    role = models.CharField(default="is_candidate")
+    accepted = models.BooleanField(default=None, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Email: {self.email}, Accepted: {self.accepted}"

@@ -18,7 +18,8 @@ from .models import (
 	ExtraAccountsPrice,
 	BillingDetail,
 	Hired,
-	StripePayments
+	StripePayments,
+	InvitedUser
 )
 from django.contrib.auth.models import User
 from django.db.models import Sum
@@ -456,3 +457,9 @@ def CustomClientSerializer(objs):
 		temp_dict["interviews_done"] = Interview.objects.filter(op_id__client=i.id).count()
 		data.append(temp_dict)
 	return data
+
+
+class InvitedUserSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = InvitedUser
+		fields = '__all__'

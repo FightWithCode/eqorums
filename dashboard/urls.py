@@ -785,4 +785,14 @@ urlpatterns = [
         views.UserList.as_view(),
         name="users-list"
     ),
+    path(
+        "invite-user",
+        views.InviteUser.as_view(),
+        name="invite-user"
+    ),
+    path(
+        "get-invited-user",
+        views.GetInvitedUser.as_view(),
+        name="get-invited-user"
+    ),
 ]

@@ -89,6 +89,7 @@ from .serializers import (
 	ClientPackageSerializer,
 	ExtraAccountsPriceSerializer,
 	BillingDetailSerializer,
+	InvitedUserSerializer
 )
 
 from clients.serializers import ClientSerializer
@@ -135,6 +136,7 @@ from .models import (
 	StripePayments,
 	StripeWebhookData, 
 	UserActivity,
+	InvitedUser
 )
 from candidates.models import Candidate
 
@@ -13178,3 +13180,45 @@ class UserList(APIView):
 			response["error"] = str(e)
 			return Response(response, status=status.HTTP_400_BAD_REQUEST)
 	
+
+class InviteUser(APIView):
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def post(self, request):
+		response = {}
+		try:
+			invited_serializer = InvitedUserSerializer(data=request.data)
+			if invited_serializer.is_valid():
+				invited_serializer.save() 
+			else:
+				response["msg"] = "User invite failed!"
+				response["errors"] = invited_serializer.errors
+				return Response(response, status=status.HTTP_400_BAD_REQUEST)
+			response["msg"] = "users fetched"
+			response["data"] = invited_serializer.data
+			return Response(response, status=status.HTTP_200_OK)
+		except Exception as e:
+			response["msg"] = "error"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetInvitedUser(APIView):
+	permission_classes = (permissions.AllowAny,)
+
+	def get(self, request, uuid):
+		response = {}
+		try:
+			invited_obj = InvitedUser.objects.get(uuid=uuid)
+			invited_serializer = InvitedUserSerializer(invited_obj)
+			response["msg"] = "Invited user details fetched!"
+			response["data"] = invited_serializer.data
+			return Response(response, status=status.HTTP_200_OK)
+		except InvitedUser.DoesNotExist:
+			response["msg"] = "Invited user not found!"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+			response["msg"] = "error"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
