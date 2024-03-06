@@ -422,7 +422,7 @@ class InvitedUser(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     email = models.CharField(max_length=255, unique=True)
     client = models.ForeignKey("clients.Client", on_delete=models.CASCADE)
-    role = models.CharField(default="is_candidate")
+    role = models.CharField(max_length=255, default="is_candidate")
     accepted = models.BooleanField(default=None, null=True, blank=True)
     created_at = models.DateTimeField(auto_now=True)
 
