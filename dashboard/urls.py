@@ -791,8 +791,13 @@ urlpatterns = [
         name="invite-user"
     ),
     path(
-        "get-invited-user",
+        "get-invited-user/<str:uuid>",
         views.GetInvitedUser.as_view(),
         name="get-invited-user"
+    ),
+    path(
+        "signup-invited-user/<str:uuid>",
+        views.SignupInvitedUser.as_view(),
+        name="signup-invited-user"
     ),
 ]

@@ -463,3 +463,77 @@ class InvitedUserSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = InvitedUser
 		fields = '__all__'
+
+
+class SignupUserSerializer(serializers.ModelSerializer):
+	confirm_password = serializers.CharField(write_only=True)
+
+	class Meta:
+		model = User
+		fields = ["confirm_password", "email", "password", "first_name", "last_name"]
+
+	def validate_email(self, value):
+		if User.objects.filter(email=value.lower()):
+			raise serializers.ValidationError("User with this email already exists!")
+		return value
+
+
+
+class SignupProfileSerializer(serializers.ModelSerializer):
+	user = SignupUserSerializer(required=True)
+	
+	class Meta:
+		model = Profile
+		fields = ["user", "phone_number", "cell_phone", "skype_id", "email", "job_title", "profile_photo"]
+	
+	def create(self, validated_data):
+		user_data = validated_data.pop("user")
+		user_data.pop("confirm_password")
+		user_obj = User(**user_data)
+		user_obj.set_password(user_data['password'])
+		user_obj.save()
+		profile_obj = Profile.objects.create(user=user_obj, **validated_data)
+		return profile_obj
+	
+	def validate_email(self, value):
+		if Profile.objects.filter(email=value.lower()) or User.objects.filter(email=value.lower()):
+			raise serializers.ValidationError("User with this email already exists!")
+		return value
+
+
+class SignupCandidateSerializer(serializers.ModelSerializer):
+	user = SignupUserSerializer(required=True)
+	
+	class Meta:
+		model = Candidate
+		fields = ["user", "phone_number", "cell_phone", "skype_id", "email", "job_title", "profile_photo"]
+	
+	def create(self, validated_data):
+		user_data = validated_data.pop("user")
+		user_data.pop("confirm_password")
+		user_obj = User(**user_data)
+		user_obj.set_password(user_data['password'])
+		user_obj.save()
+		profile_obj = Profile.objects.create(user=user_obj, **validated_data)
+		candidate_obj = Candidate.objects.create(**validated_data)
+		return candidate_obj
+	
+	def validate_email(self, value):
+		if Profile.objects.filter(email=value.lower()) or User.objects.filter(email=value.lower()):
+			raise serializers.ValidationError("User with this email already exists!")
+		return value
+
+class SignupInvitedUserSerializer(serializers.Serializer):
+	email = serializers.EmailField()
+	password = serializers.CharField(max_length=255)
+	confirm_password = serializers.CharField(max_length=255)
+	first_name = serializers.CharField(max_length=255)
+	list_name = serializers.CharField(max_length=255)
+	salary_range = serializers.CharField(max_length=255, allow_blank=True)
+	location = serializers.CharField(max_length=255, allow_blank=True)
+	phone_no = serializers.CharField(max_length=15, allow_blank=True)
+	work_auth = serializers.CharField(max_length=255, allow_blank=True)
+	email = serializers.CharField(max_length=255, allow_blank=True)
+	email = serializers.CharField(max_length=255, allow_blank=True)
+	email = serializers.CharField(max_length=255, allow_blank=True)
+	email = serializers.CharField(max_length=255, allow_blank=True)

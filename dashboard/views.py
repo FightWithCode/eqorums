@@ -89,7 +89,8 @@ from .serializers import (
 	ClientPackageSerializer,
 	ExtraAccountsPriceSerializer,
 	BillingDetailSerializer,
-	InvitedUserSerializer
+	InvitedUserSerializer,
+	SignupProfileSerializer
 )
 
 from clients.serializers import ClientSerializer
@@ -13222,3 +13223,51 @@ class GetInvitedUser(APIView):
 			response["msg"] = "error"
 			response["error"] = str(e)
 			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SignupInvitedUser(APIView):
+
+	def post(self, request, uuid):
+		response = {}
+		try:
+			invite_obj = InvitedUser.objects.get(uuid=uuid)
+			data = request.data
+			data["user"] = json.loads(request.data.get("user"))
+			if data.get("user").get("password") != data.get("user").get("confirm_password"):
+				response["msg"] = "Signup failed!"
+				response["errors"] = "Passwords didn't match!"
+				return Response(response, status=status.HTTP_400_BAD_REQUEST)
+			if invite_obj.email != request.data.get("email"):
+				response["msg"] = "Malformed data"
+				response["error"] = None
+				return Response(response, status=status.HTTP_400_BAD_REQUEST)
+			
+			serializer = SignupProfileSerializer(data=data.dict())
+			if serializer.is_valid():
+				profile_obj = serializer.save()
+				# setting roles and client
+				profile_obj.roles = [invite_obj.role]
+				if invite_obj.role == "is_ae":
+					profile_obj.client = json.dumps([invite_obj.client.id])
+				else:
+					profile_obj.client = invite_obj.client.id
+				profile_obj.save()
+			else:
+				response["msg"] = "Signup failed!"
+				response["errors"] = serializer.errors
+				return Response(response, status=status.HTTP_400_BAD_REQUEST)
+			invite_obj.accepted = True
+			invite_obj.save()
+			response["msg"] = "Signup success"
+			response["data"] = None
+			return Response(response, status=status.HTTP_200_OK)
+		except InvitedUser.DoesNotExist:
+			response["msg"] = "Invited user not found"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+			response["msg"] = "error"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+		
+
