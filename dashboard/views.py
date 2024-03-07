@@ -13190,7 +13190,24 @@ class InviteUser(APIView):
 		try:
 			invited_serializer = InvitedUserSerializer(data=request.data)
 			if invited_serializer.is_valid():
-				invited_serializer.save() 
+				obj = invited_serializer.save()
+				# send mail
+				subject = 'Invitation to join Qorums'
+				d = {
+					"company": obj.client.company_name,
+				}
+				link = f"{settings.DOMAIN}/invite-user/{obj.uuid}"
+				html_content = "You have been invited to join qorums. Please go to below link to proceed: {}".format(link)
+				try:
+					reply_to = request.user.profile.email
+					sender_name = request.user.get_full_name()
+				except:
+					reply_to = 'noreply@qorums.com'
+					sender_name = 'No Reply'
+				try:
+					tasks.invite_user.delay(subject, html_content, 'text', [obj.email], reply_to, sender_name)
+				except Exception as e:
+							return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 			else:
 				response["msg"] = "User invite failed!"
 				response["errors"] = invited_serializer.errors

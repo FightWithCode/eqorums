@@ -76,13 +76,12 @@ def submited_email(cao_id, subject, html_content, content_type, recipient_list, 
 	sleep(180)
 	try:
 		CandidateAssociateData.objects.get(id=cao_id)
-		recipients = ", ".join(recipient_list)
 		port = 465  # For SSL
 		password = settings.EMAIL_HOST_PASSWORD #sender email password
 		sender_email = "noreply@qorums.com"
 		message = MIMEMultipart('alternative')
 		message['Subject'] = subject
-		message['To'] = recipients
+		message['To'] = recipient_list
 		message['From'] = formataddr(("{} - Qorums Notification".format(sender_name), sender_email))
 		message['Reply-To'] = reply_to
 		message["Cc"] = cc
@@ -97,6 +96,32 @@ def submited_email(cao_id, subject, html_content, content_type, recipient_list, 
 			part.set_payload(open('/home/ubuntu/ts_2_backend/'+'invite.ics', "rb").read())
 			part.add_header('Content-Disposition', 'attachment; filename="invite.ics"')
 			message.attach(part)
+		server = smtplib.SMTP_SSL("smtp.gmail.com", port)
+		server.login(sender_email, password)
+		server.sendmail(sender_email, recipient_list, message.as_string())
+		server.quit()
+	except:
+		pass
+
+
+@shared_task()
+def invite_user(subject, html_content, content_type, recipient_list, reply_to, sender_name):
+	sleep(180)
+	try:
+		port = 465  # For SSL
+		password = settings.EMAIL_HOST_PASSWORD #sender email password
+		sender_email = "noreply@qorums.com"
+		message = MIMEMultipart('alternative')
+		message['Subject'] = subject
+		message['To'] = recipient_list
+		message['From'] = formataddr(("{} - Qorums Notification".format(sender_name), sender_email))
+		message['Reply-To'] = reply_to
+		message.add_header("X-Priority","1 (High)")
+		if content_type == 'html':
+			message.attach(MIMEText(html_content, 'html'))
+		else:
+			message.attach(MIMEText(html_content))
+		# print(os.getcwd())
 		server = smtplib.SMTP_SSL("smtp.gmail.com", port)
 		server.login(sender_email, password)
 		server.sendmail(sender_email, recipient_list, message.as_string())
