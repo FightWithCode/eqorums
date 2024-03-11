@@ -427,3 +427,9 @@ class InvitedUser(models.Model):
 
     def __str__(self):
         return f"Email: {self.email}, Accepted: {self.accepted}"
+
+
+class UserDoc(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    type = models.CharField(max_length=255) # resume or reference
+    file = models.FileField(upload_to="user_docs")

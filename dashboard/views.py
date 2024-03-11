@@ -137,7 +137,8 @@ from .models import (
 	StripePayments,
 	StripeWebhookData, 
 	UserActivity,
-	InvitedUser
+	InvitedUser,
+	UserDoc
 )
 from candidates.models import Candidate
 
@@ -13265,6 +13266,17 @@ class SignupInvitedUser(APIView):
 				else:
 					profile_obj.client = invite_obj.client.id
 				profile_obj.save()
+				# store docsuments likes resume or reference
+				try:
+					resume = request.FILES["resume"]
+					UserDoc.objects.create(user=profile_obj.user, file=resume, type="resume")
+				except:
+					pass
+				try:
+					reference = request.FILES["reference"]
+					UserDoc.objects.create(user=profile_obj.user, file=resume, type="reference")
+				except:
+					pass
 			else:
 				response["msg"] = "Signup failed!"
 				response["errors"] = serializer.errors
