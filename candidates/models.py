@@ -48,7 +48,7 @@ class Candidate(models.Model):
     currency = models.CharField(max_length=10, null=True, blank=True, default='$')
     salaryRange = models.CharField(max_length=255, default="Not Specified",null=True, blank=True)
     work_auth = models.CharField(max_length=255, default="Not Specified",null=True, blank=True)
-    special_instruction = models.TextField(default="None")
+    special_instruction = models.TextField(default="None", blank=True)
     personal_notes = models.CharField(max_length=255, default="Not Specified",null=True, blank=True)
     comments = models.TextField(default="Not Specified",null=True, blank=True)
     skillsets = models.JSONField(default=get_json_default(), null=True, blank=True)

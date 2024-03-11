@@ -472,6 +472,7 @@ class SignupSerializer(serializers.Serializer):
 	last_name = serializers.CharField(max_length=255)
 	password = serializers.CharField(max_length=255)
 	confirm_password = serializers.CharField(max_length=255)
+	role = serializers.CharField(max_length=255)
 	phone_number = serializers.CharField(max_length=255, required=False)
 	cell_phone = serializers.CharField(max_length=255, required=False)
 	job_title = serializers.CharField(max_length=255, required=False)
@@ -480,7 +481,7 @@ class SignupSerializer(serializers.Serializer):
 	nickname = serializers.CharField(max_length=255, required=False)
 	location = serializers.CharField(max_length=255, required=False)
 	work_auth = serializers.CharField(max_length=255, required=False)
-	special_instruction = serializers.CharField()
+	special_instruction = serializers.CharField(required=False)
 	
 	def validate_email(self, value):
 		if User.objects.filter(email=value.lower()):
@@ -505,11 +506,11 @@ class SignupSerializer(serializers.Serializer):
 		user_obj.save()
 		client_obj = Client.objects.get(id=validated_data["client"])
 		if validated_data["role"] == "is_candidate":
-			profile_obj = Profile.objects.create(user=user_obj, name=validated_data["first_name"], last_name=validated_data["last_name"], nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"), is_candidate=True)
+			profile_obj = Profile.objects.create(user=user_obj, nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"), is_candidate=True)
 			candidate_obj = Candidate.objects.create(created_by_client=client_obj, user=user_obj, name=validated_data["first_name"], last_name=validated_data["last_name"], nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), temp_profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"), location=validated_data.get("location"), work_auth=validated_data.get("work_auth"), special_instruction=validated_data.get("special_instruction"))
 		else:
 			# create profile
-			profile_obj = Profile.objects.create(user=user_obj, name=validated_data["first_name"], last_name=validated_data["last_name"], nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"))
+			profile_obj = Profile.objects.create(user=user_obj, nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"))
 		return profile_obj
 
 # class SignupUserSerializer(serializers.ModelSerializer):

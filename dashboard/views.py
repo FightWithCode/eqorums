@@ -13252,7 +13252,10 @@ class SignupInvitedUser(APIView):
 				response["msg"] = "Malformed data"
 				response["error"] = None
 				return Response(response, status=status.HTTP_400_BAD_REQUEST)
-			serializer = SignupSerializer(data=request.data)
+			data = request.data
+			data["client"] = invite_obj.client.id
+			data["role"] = invite_obj.role
+			serializer = SignupSerializer(data=data)
 			if serializer.is_valid():
 				profile_obj = serializer.save()
 				# setting roles and client
