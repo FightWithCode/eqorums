@@ -48,8 +48,7 @@ class Profile(models.Model):
     phone_number = models.CharField(max_length=17, blank=False)
     cell_phone = models.CharField(max_length=17, blank=True, null=True)
     
-    # For Candidates - Not used as of now.
-    
+    nickname = models.CharField(max_length=255, null=True, blank=True, default=None)
     skype_id = models.CharField(max_length=100, null=True, blank=True)
     email = models.CharField(max_length=255, unique=True) # Check all the email before migration on server
     job_title = models.CharField(max_length=255, default=None, null=True, blank=True)
@@ -73,7 +72,7 @@ class Profile(models.Model):
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return self.user.first_name + ' ' + self.user.last_name
+        return self.user.get_full_name()
 
 
 class OpenPositionStageCompletion(models.Model):

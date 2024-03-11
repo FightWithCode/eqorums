@@ -90,7 +90,7 @@ from .serializers import (
 	ExtraAccountsPriceSerializer,
 	BillingDetailSerializer,
 	InvitedUserSerializer,
-	SignupProfileSerializer
+	SignupSerializer
 )
 
 from clients.serializers import ClientSerializer
@@ -13248,18 +13248,11 @@ class SignupInvitedUser(APIView):
 		response = {}
 		try:
 			invite_obj = InvitedUser.objects.get(uuid=uuid)
-			data = request.data
-			data["user"] = json.loads(request.data.get("user"))
-			if data.get("user").get("password") != data.get("user").get("confirm_password"):
-				response["msg"] = "Signup failed!"
-				response["errors"] = "Passwords didn't match!"
-				return Response(response, status=status.HTTP_400_BAD_REQUEST)
 			if invite_obj.email != request.data.get("email"):
 				response["msg"] = "Malformed data"
 				response["error"] = None
 				return Response(response, status=status.HTTP_400_BAD_REQUEST)
-			
-			serializer = SignupProfileSerializer(data=data.dict())
+			serializer = SignupSerializer(data=request.data)
 			if serializer.is_valid():
 				profile_obj = serializer.save()
 				# setting roles and client

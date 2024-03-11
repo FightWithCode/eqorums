@@ -465,75 +465,107 @@ class InvitedUserSerializer(serializers.ModelSerializer):
 		fields = '__all__'
 
 
-class SignupUserSerializer(serializers.ModelSerializer):
-	confirm_password = serializers.CharField(write_only=True)
-
-	class Meta:
-		model = User
-		fields = ["confirm_password", "email", "password", "first_name", "last_name"]
-
+class SignupSerializer(serializers.Serializer):
+	client = serializers.IntegerField()
+	email = serializers.EmailField(max_length=255)
+	first_name = serializers.CharField(max_length=255)
+	last_name = serializers.CharField(max_length=255)
+	password = serializers.CharField(max_length=255)
+	confirm_password = serializers.CharField(max_length=255)
+	phone_number = serializers.CharField(max_length=255, required=False)
+	cell_phone = serializers.CharField(max_length=255, required=False)
+	job_title = serializers.CharField(max_length=255, required=False)
+	skype_id = serializers.CharField(max_length=255, required=False)
+	profile_photo = serializers.FileField(max_length=255, required=False)
+	nickname = serializers.CharField(max_length=255, required=False)
+	location = serializers.CharField(max_length=255, required=False)
+	work_auth = serializers.CharField(max_length=255, required=False)
+	special_instruction = serializers.CharField()
+	
 	def validate_email(self, value):
 		if User.objects.filter(email=value.lower()):
 			raise serializers.ValidationError("User with this email already exists!")
 		return value
-
-
-
-class SignupProfileSerializer(serializers.ModelSerializer):
-	user = SignupUserSerializer(required=True)
 	
-	class Meta:
-		model = Profile
-		fields = ["user", "phone_number", "cell_phone", "skype_id", "email", "job_title", "profile_photo"]
+	def validate_client(self, value):
+		if not Client.objects.filter(id=value):
+			raise serializers.ValidationError("Client with this id does not exists!")
+		return value
+	
+	def validate(self, data):
+		if data["password"] != data["confirm_password"]:
+			raise serializers.ValidationError("Passwords didn't match!")
+		return data
+
 	
 	def create(self, validated_data):
-		user_data = validated_data.pop("user")
-		user_data.pop("confirm_password")
-		user_obj = User(**user_data)
-		user_obj.set_password(user_data['password'])
+		# create user
+		user_obj = User(username=validated_data["email"], email=validated_data["email"], first_name=validated_data["first_name"], last_name=validated_data["last_name"])
+		user_obj.set_password(validated_data['password'])
 		user_obj.save()
-		profile_obj = Profile.objects.create(user=user_obj, **validated_data)
+		client_obj = Client.objects.get(id=validated_data["client"])
+		if validated_data["role"] == "is_candidate":
+			profile_obj = Profile.objects.create(user=user_obj, name=validated_data["first_name"], last_name=validated_data["last_name"], nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"), is_candidate=True)
+			candidate_obj = Candidate.objects.create(created_by_client=client_obj, user=user_obj, name=validated_data["first_name"], last_name=validated_data["last_name"], nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), temp_profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"), location=validated_data.get("location"), work_auth=validated_data.get("work_auth"), special_instruction=validated_data.get("special_instruction"))
+		else:
+			# create profile
+			profile_obj = Profile.objects.create(user=user_obj, name=validated_data["first_name"], last_name=validated_data["last_name"], nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"))
 		return profile_obj
-	
-	def validate_email(self, value):
-		if Profile.objects.filter(email=value.lower()) or User.objects.filter(email=value.lower()):
-			raise serializers.ValidationError("User with this email already exists!")
-		return value
+
+# class SignupUserSerializer(serializers.ModelSerializer):
+# 	confirm_password = serializers.CharField(write_only=True)
+
+# 	class Meta:
+# 		model = User
+# 		fields = ["confirm_password", "email", "password", "first_name", "last_name"]
+
+# 	def validate_email(self, value):
+# 		if User.objects.filter(email=value.lower()):
+# 			raise serializers.ValidationError("User with this email already exists!")
+# 		return value
 
 
-class SignupCandidateSerializer(serializers.ModelSerializer):
-	user = SignupUserSerializer(required=True)
-	
-	class Meta:
-		model = Candidate
-		fields = ["user", "phone_number", "cell_phone", "skype_id", "email", "job_title", "profile_photo"]
-	
-	def create(self, validated_data):
-		user_data = validated_data.pop("user")
-		user_data.pop("confirm_password")
-		user_obj = User(**user_data)
-		user_obj.set_password(user_data['password'])
-		user_obj.save()
-		profile_obj = Profile.objects.create(user=user_obj, **validated_data)
-		candidate_obj = Candidate.objects.create(**validated_data)
-		return candidate_obj
-	
-	def validate_email(self, value):
-		if Profile.objects.filter(email=value.lower()) or User.objects.filter(email=value.lower()):
-			raise serializers.ValidationError("User with this email already exists!")
-		return value
 
-class SignupInvitedUserSerializer(serializers.Serializer):
-	email = serializers.EmailField()
-	password = serializers.CharField(max_length=255)
-	confirm_password = serializers.CharField(max_length=255)
-	first_name = serializers.CharField(max_length=255)
-	list_name = serializers.CharField(max_length=255)
-	salary_range = serializers.CharField(max_length=255, allow_blank=True)
-	location = serializers.CharField(max_length=255, allow_blank=True)
-	phone_no = serializers.CharField(max_length=15, allow_blank=True)
-	work_auth = serializers.CharField(max_length=255, allow_blank=True)
-	email = serializers.CharField(max_length=255, allow_blank=True)
-	email = serializers.CharField(max_length=255, allow_blank=True)
-	email = serializers.CharField(max_length=255, allow_blank=True)
-	email = serializers.CharField(max_length=255, allow_blank=True)
+# class SignupProfileSerializer(serializers.ModelSerializer):
+# 	user = SignupUserSerializer(required=True)
+	
+# 	class Meta:
+# 		model = Profile
+# 		fields = ["user", "phone_number", "cell_phone", "skype_id", "email", "job_title", "profile_photo"]
+	
+# 	def create(self, validated_data):
+# 		user_data = validated_data.pop("user")
+# 		user_data.pop("confirm_password")
+# 		user_obj = User(**user_data)
+# 		user_obj.set_password(user_data['password'])
+# 		user_obj.save()
+# 		profile_obj = Profile.objects.create(user=user_obj, **validated_data)
+# 		return profile_obj
+	
+# 	def validate_email(self, value):
+# 		if Profile.objects.filter(email=value.lower()) or User.objects.filter(email=value.lower()):
+# 			raise serializers.ValidationError("User with this email already exists!")
+# 		return value
+
+
+# class SignupCandidateSerializer(serializers.ModelSerializer):
+# 	profile = SignupProfileSerializer
+	
+# 	class Meta:
+# 		model = Candidate
+# 		fields = ["user", "nickname", "cell_phone", "skype_id", "email", "job_title", "profile_photo", "location", "work_auth", "special_instruction"]
+	
+# 	def create(self, validated_data):
+# 		user_data = validated_data.pop("user")
+# 		user_data.pop("confirm_password")
+# 		user_obj = User(**user_data)
+# 		user_obj.set_password(user_data['password'])
+# 		user_obj.save()
+# 		profile_obj = Profile.objects.create(user=user_obj, **validated_data)
+# 		candidate_obj = Candidate.objects.create(**validated_data)
+# 		return candidate_obj
+	
+# 	def validate_email(self, value):
+# 		if Profile.objects.filter(email=value.lower()) or User.objects.filter(email=value.lower()):
+# 			raise serializers.ValidationError("User with this email already exists!")
+# 		return value
