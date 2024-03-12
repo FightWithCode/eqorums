@@ -13197,7 +13197,7 @@ class InviteUser(APIView):
 				d = {
 					"company": obj.client.company_name,
 				}
-				link = f"{settings.DOMAIN}/invite-user/{obj.uuid}"
+				link = f"{settings.DOMAIN}/signup-user?{obj.uuid}"
 				html_content = "You have been invited to join qorums. Please go to below link to proceed: {}".format(link)
 				try:
 					reply_to = request.user.profile.email
