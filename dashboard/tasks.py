@@ -126,8 +126,8 @@ def invite_user(subject, html_content, content_type, recipient_list, reply_to, s
 		server.login(sender_email, password)
 		server.sendmail(sender_email, recipient_list, message.as_string())
 		server.quit()
-	except:
-		pass
+	except Exception as e:
+		print(e)
 
 
 @shared_task()
