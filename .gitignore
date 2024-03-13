@@ -168,3 +168,4 @@ subscribe.js
 subscribe-subs.html
 subscribe-subs.js
 backup-utils.py
+backup_position_status.py

@@ -84,17 +84,18 @@ class OpenPosition(models.Model):
     candidate_location = models.CharField(max_length=255, default='None', null=True, blank=True)
     disabled = models.BooleanField(default=False)
     no_of_open_positions = models.IntegerField(default=1, null=True, blank=True)
-    filled = models.BooleanField(default=False)
-    filled_date = models.DateTimeField(default=None, blank=True, null=True)
     work_auth = models.CharField(max_length=255, default=None, blank=True, null=True)
     work_location = models.CharField(max_length=255, default=None, blank=True, null=True)
     # For Copying a OpenPosition
     copied_from = models.IntegerField(default=0) # Copied OP ID
     copied_from_position = models.ForeignKey("openposition.OpenPosition", on_delete=models.SET_NULL, default=None, null=True, blank=True) # Copied OP ID
-    drafted = models.BooleanField(default=False)
 
+    drafted = models.BooleanField(default=False)
     archieved = models.BooleanField(default=False)
     trashed = models.BooleanField(default=False)
+    filled = models.BooleanField(default=False)
+    filled_date = models.DateTimeField(default=None, blank=True, null=True)
+    status = models.CharField(max_length=15, default="draft")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
