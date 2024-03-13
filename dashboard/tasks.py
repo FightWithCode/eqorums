@@ -75,13 +75,14 @@ def send(subject, html_content, content_type, recipient_list, reply_to, sender_n
 def submited_email(cao_id, subject, html_content, content_type, recipient_list, reply_to, sender_name, filename_event=None, cc=""):
 	sleep(180)
 	try:
+		recipients = ", ".join(recipient_list)
 		CandidateAssociateData.objects.get(id=cao_id)
 		port = 465  # For SSL
 		password = settings.EMAIL_HOST_PASSWORD #sender email password
 		sender_email = "noreply@qorums.com"
 		message = MIMEMultipart('alternative')
 		message['Subject'] = subject
-		message['To'] = recipient_list
+		message['To'] = recipients
 		message['From'] = formataddr(("{} - Qorums Notification".format(sender_name), sender_email))
 		message['Reply-To'] = reply_to
 		message["Cc"] = cc
@@ -106,8 +107,8 @@ def submited_email(cao_id, subject, html_content, content_type, recipient_list, 
 
 @shared_task()
 def invite_user(subject, html_content, content_type, recipient_list, reply_to, sender_name):
+	recipients = ", ".join(recipient_list)
 	print("slept for 180 sec")
-	sleep(180)
 	print("data is: ", subject, html_content, content_type, recipient_list)
 	# try:
 	print("iminsidetry")
@@ -116,7 +117,7 @@ def invite_user(subject, html_content, content_type, recipient_list, reply_to, s
 	sender_email = "noreply@qorums.com"
 	message = MIMEMultipart('alternative')
 	message['Subject'] = subject
-	message['To'] = recipient_list
+	message['To'] = recipients
 	message['From'] = formataddr(("{} - Qorums Notification".format(sender_name), sender_email))
 	message['Reply-To'] = reply_to
 	message.add_header("X-Priority","1 (High)")
