@@ -108,7 +108,7 @@ def submited_email(cao_id, subject, html_content, content_type, recipient_list, 
 def invite_user(subject, html_content, content_type, recipient_list, reply_to, sender_name):
 	print("slept for 180 sec")
 	sleep(180)
-	print("data is": subject, html_content, content_type, recipient_list)
+	print("data is":, subject, html_content, content_type, recipient_list)
 	try:
 		print("iminsidetry")
 		port = 465  # For SSL
