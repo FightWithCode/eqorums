@@ -109,30 +109,30 @@ def invite_user(subject, html_content, content_type, recipient_list, reply_to, s
 	print("slept for 180 sec")
 	sleep(180)
 	print("data is: ", subject, html_content, content_type, recipient_list)
-	try:
-		print("iminsidetry")
-		port = 465  # For SSL
-		password = settings.EMAIL_HOST_PASSWORD #sender email password
-		sender_email = "noreply@qorums.com"
-		message = MIMEMultipart('alternative')
-		message['Subject'] = subject
-		message['To'] = recipient_list
-		message['From'] = formataddr(("{} - Qorums Notification".format(sender_name), sender_email))
-		message['Reply-To'] = reply_to
-		message.add_header("X-Priority","1 (High)")
-		if content_type == 'html':
-			message.attach(MIMEText(html_content, 'html'))
-		else:
-			message.attach(MIMEText(html_content))
-		# print(os.getcwd())
-		server = smtplib.SMTP_SSL("smtp.gmail.com", port)
-		server.login(sender_email, password)
-		server.sendmail(sender_email, recipient_list, message.as_string())
-		print("mail sent")
-		server.quit()
-	except Exception as e:
-		print("iminsideexcept")
-		print(e)
+	# try:
+	print("iminsidetry")
+	port = 465  # For SSL
+	password = settings.EMAIL_HOST_PASSWORD #sender email password
+	sender_email = "noreply@qorums.com"
+	message = MIMEMultipart('alternative')
+	message['Subject'] = subject
+	message['To'] = recipient_list
+	message['From'] = formataddr(("{} - Qorums Notification".format(sender_name), sender_email))
+	message['Reply-To'] = reply_to
+	message.add_header("X-Priority","1 (High)")
+	if content_type == 'html':
+		message.attach(MIMEText(html_content, 'html'))
+	else:
+		message.attach(MIMEText(html_content))
+	# print(os.getcwd())
+	server = smtplib.SMTP_SSL("smtp.gmail.com", port)
+	server.login(sender_email, password)
+	server.sendmail(sender_email, recipient_list, message.as_string())
+	print("mail sent")
+	server.quit()
+	# except Exception as e:
+	# 	print("iminsideexcept")
+	# 	print(e)
 
 
 @shared_task()
