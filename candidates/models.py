@@ -44,7 +44,7 @@ class Candidate(models.Model):
     location = models.CharField(max_length=255, default="Not Specified",null=True, blank=True)
     
     # Association data
-    desired_work_location = models.CharField(max_length=255, default="Not Specified",null=True, blank=True)
+    desired_work_location = models.JSONField(max_length=255, default=get_listed_json_default)
     currency = models.CharField(max_length=10, null=True, blank=True, default='$')
     salaryRange = models.CharField(max_length=255, default="Not Specified",null=True, blank=True)
     work_auth = models.CharField(max_length=255, default="Not Specified",null=True, blank=True)
