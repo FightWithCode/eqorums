@@ -106,8 +106,11 @@ def submited_email(cao_id, subject, html_content, content_type, recipient_list, 
 
 @shared_task()
 def invite_user(subject, html_content, content_type, recipient_list, reply_to, sender_name):
+	print("slept for 180 sec")
 	sleep(180)
+	print("data is": subject, html_content, content_type, recipient_list)
 	try:
+		print("iminsidetry")
 		port = 465  # For SSL
 		password = settings.EMAIL_HOST_PASSWORD #sender email password
 		sender_email = "noreply@qorums.com"
@@ -125,8 +128,10 @@ def invite_user(subject, html_content, content_type, recipient_list, reply_to, s
 		server = smtplib.SMTP_SSL("smtp.gmail.com", port)
 		server.login(sender_email, password)
 		server.sendmail(sender_email, recipient_list, message.as_string())
+		print("mail sent")
 		server.quit()
 	except Exception as e:
+		print("iminsideexcept")
 		print(e)
 
 
