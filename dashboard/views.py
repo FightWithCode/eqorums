@@ -13262,7 +13262,7 @@ class SignupInviteUserS1(APIView):
 				response["msg"] = "Malformed data"
 				response["error"] = None
 				return Response(response, status=status.HTTP_400_BAD_REQUEST)
-			data = request.data
+			data = request.data.dict()
 			data["client"] = invite_obj.client.id
 			data["role"] = invite_obj.role
 			
