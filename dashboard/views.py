@@ -13327,16 +13327,16 @@ class SignupInvitedUserS2(APIView):
 			# create or update candidate data
 			try:
 				candidate_obj = Candidate.objects.get(user=user_obj)
-				candidate_obj.name=request.data.get("first_name"), 
-				candidate_obj.last_name=request.data.get("last_name"), 
-				candidate_obj.nickname=request.data.get("nickname"), 
-				candidate_obj.skype_id=request.data.get("skype_id"), 
-				candidate_obj.email=invite_obj.email,
-				candidate_obj.job_title=request.data.get("job_title"), 
-				candidate_obj.location=request.data.get("location"), 
-				candidate_obj.work_auth=request.data.get("work_auth"), 
-				candidate_obj.special_instruction=request.data.get("special_instruction"), 
-				candidate_obj.salaryRange=request.data.get("salaryRange"), 
+				candidate_obj.name=request.data.get("first_name")
+				candidate_obj.last_name=request.data.get("last_name")
+				candidate_obj.nickname=request.data.get("nickname")
+				candidate_obj.skype_id=request.data.get("skype_id")
+				candidate_obj.email=invite_obj.email
+				candidate_obj.job_title=request.data.get("job_title")
+				candidate_obj.location=request.data.get("location")
+				candidate_obj.work_auth=request.data.get("work_auth")
+				candidate_obj.special_instruction=request.data.get("special_instruction")
+				candidate_obj.salaryRange=request.data.get("salaryRange")
 				candidate_obj.desired_work_location=request.data.get("desired_work_location", "").split(",")
 				candidate_obj.save()
 			except Candidate.DoesNotExist:
@@ -13433,6 +13433,12 @@ class GetSignupStepData(APIView):
 			data["job_title"] = user_obj.profile.job_title
 			data["skype_id"] = user_obj.profile.skype_id
 			data["nickname"] = user_obj.profile.nickname
+			if user_obj.profile.profile_photo:
+				data["profile_photo"] = {}
+				data["profile_photo"]["name"] = user_obj.profile.profile_photo.name
+				data["profile_photo"]["link"] = user_obj.profile.profile_photo.url
+			else:
+				data["profile_photo"] = {}
 			# update candidate data if candidate
 			try:
 				candidate_obj = Candidate.objects.get(user=user_obj)
@@ -13441,8 +13447,28 @@ class GetSignupStepData(APIView):
 				data["special_instruction"] = candidate_obj.special_instruction
 				data["salaryRange"] = candidate_obj.salaryRange
 				data["desired_work_location"] = candidate_obj.desired_work_location
+				if candidate_obj.profile_photo:
+					data["profile_photo"] = {}
+					data["profile_photo"]["name"] = candidate_obj.profile_photo.name
+					data["profile_photo"]["link"] = candidate_obj.profile_photo.url
+				else:
+					data["profile_photo"] = {}
 			except:
 				pass
+			# get other docs
+			resume = {}
+			user_docs = UserDoc.objects.filter(user=user_obj, type="resume").last()
+			if user_docs:
+				resume["name"] = user_docs.file.name
+				resume["link"] = user_docs.file.url
+			
+			reference = {}
+			user_docs = UserDoc.objects.filter(user=user_obj, type="reference").last()
+			if user_docs:
+				reference["name"] = user_docs.file.name
+				reference["link"] = user_docs.file.url
+			data["resume"] = resume
+			data["reference"] = reference
 			response["msg"] = "Data fetched!"
 			response["data"] = data
 			return Response(response, status=status.HTTP_200_OK)
