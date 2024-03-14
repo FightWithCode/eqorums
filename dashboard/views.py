@@ -13324,22 +13324,37 @@ class SignupInvitedUserS2(APIView):
 			user_obj.profile.job_title = request.data("job_title")
 			user_obj.profile.skype_id = request.data("skype_id")
 			user_obj.profile.save()
-			# create and update candidate data
-			candidate_obj = Candidate.objects.create(
-				created_by_client=invite_obj.client, 
-				user=user_obj, 
-				name=request.data("first_name"), 
-				last_name=request.data("last_name"), 
-				nickname=request.data("nickname"), 
-				skype_id=request.data("skype_id"), 
-				email=invite_obj.email,
-				job_title=request.data("job_title"), 
-				location=request.data("location"), 
-				work_auth=request.data("work_auth"), 
-				special_instruction=request.data.get("special_instruction"), 
-				salaryRange=request.data.get("salaryRange"), 
-				desired_work_location=json.loads(request.data.get("desired_work_location"))
-			)
+			# create or update candidate data
+			try:
+				candidate_obj = Candidate.objects.get(user=user_obj)
+				candidate_obj.name=request.data("first_name"), 
+				candidate_obj.last_name=request.data("last_name"), 
+				candidate_obj.nickname=request.data("nickname"), 
+				candidate_obj.skype_id=request.data("skype_id"), 
+				candidate_obj.email=invite_obj.email,
+				candidate_obj.job_title=request.data("job_title"), 
+				candidate_obj.location=request.data("location"), 
+				candidate_obj.work_auth=request.data("work_auth"), 
+				candidate_obj.special_instruction=request.data.get("special_instruction"), 
+				candidate_obj.salaryRange=request.data.get("salaryRange"), 
+				candidate_obj.desired_work_location=json.loads(request.data.get("desired_work_location"))
+				candidate_obj.save()
+			except Candidate.DoesNotExist:
+				candidate_obj = Candidate.objects.create(
+					created_by_client=invite_obj.client, 
+					user=user_obj, 
+					name=request.data("first_name"), 
+					last_name=request.data("last_name"), 
+					nickname=request.data("nickname"), 
+					skype_id=request.data("skype_id"), 
+					email=invite_obj.email,
+					job_title=request.data("job_title"), 
+					location=request.data("location"), 
+					work_auth=request.data("work_auth"), 
+					special_instruction=request.data.get("special_instruction"), 
+					salaryRange=request.data.get("salaryRange"), 
+					desired_work_location=json.loads(request.data.get("desired_work_location"))
+				)
 			# store docsuments likes profile picture, resume or reference
 			try:
 				profile_photo = request.FILES["profile_photo"]
