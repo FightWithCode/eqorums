@@ -13394,6 +13394,7 @@ class SignupInvitedUserS3(APIView):
 	def post(self, request, uuid):
 		response = {}
 		try:
+			invite_obj = InvitedUser.objects.get(uuid=uuid)
 			if invite_obj.email != request.data.get("email"):
 				response["msg"] = "Malformed data"
 				response["error"] = None
