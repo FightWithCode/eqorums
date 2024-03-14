@@ -90,7 +90,7 @@ from .serializers import (
 	ExtraAccountsPriceSerializer,
 	BillingDetailSerializer,
 	InvitedUserSerializer,
-	SignupSerializer
+	SignupSerializer,
 )
 
 from clients.serializers import ClientSerializer
@@ -13243,8 +13243,7 @@ class GetInvitedUser(APIView):
 			return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SignupInvitedUser(APIView):
-
+class SignupInviteUserS1(APIView):
 	def post(self, request, uuid):
 		response = {}
 		try:
@@ -13256,6 +13255,7 @@ class SignupInvitedUser(APIView):
 			data = request.data
 			data["client"] = invite_obj.client.id
 			data["role"] = invite_obj.role
+			
 			serializer = SignupSerializer(data=data)
 			if serializer.is_valid():
 				profile_obj = serializer.save()
@@ -13267,21 +13267,90 @@ class SignupInvitedUser(APIView):
 					profile_obj.client = invite_obj.client.id
 				profile_obj.save()
 				# store docsuments likes resume or reference
-				try:
-					resume = request.FILES["resume"]
-					UserDoc.objects.create(user=profile_obj.user, file=resume, type="resume")
-				except:
-					pass
-				try:
-					reference = request.FILES["reference"]
-					UserDoc.objects.create(user=profile_obj.user, file=resume, type="reference")
-				except:
-					pass
 			else:
 				response["msg"] = "Signup failed!"
 				response["errors"] = serializer.errors
 				return Response(response, status=status.HTTP_400_BAD_REQUEST)
 			invite_obj.accepted = True
+			invite_obj.signup_status = "second"
+			invite_obj.save()
+			response["msg"] = "Data stored!"
+			response["data"] = None
+			return Response(response, status=status.HTTP_200_OK)
+		except InvitedUser.DoesNotExist:
+			response["msg"] = "Invited user not found"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+			response["msg"] = "error"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SignupInvitedUserS2(APIView):
+
+	def post(self, request, uuid):
+		response = {}
+		try:
+			invite_obj = InvitedUser.objects.get(uuid=uuid)
+			if invite_obj.email != request.data.get("email"):
+				response["msg"] = "Malformed data"
+				response["error"] = None
+				return Response(response, status=status.HTTP_400_BAD_REQUEST)
+			user_obj = User.objects.get(email=invite_obj.email)
+			# setting roles and client
+			user_obj.profile.roles = [invite_obj.role]
+			if invite_obj.role == "is_ae":
+				user_obj.profile.client = json.dumps([invite_obj.client.id])
+			else:
+				user_obj.profile.client = invite_obj.client.id
+			# update first name last name
+			user_obj.first_name = request.data("first_name")
+			user_obj.last_name = request.data("last_name")
+			user_obj.save()
+			# update other profile data
+			user_obj.profile.nickname = request.data("nickname")
+			user_obj.profile.phone_number = request.data("phone_number")
+			user_obj.profile.job_title = request.data("job_title")
+			user_obj.profile.skype_id = request.data("skype_id")
+			user_obj.profile.save()
+			# create and update candidate data
+			candidate_obj = Candidate.objects.create(
+				created_by_client=invite_obj.client, 
+				user=user_obj, 
+				name=request.data("first_name"), 
+				last_name=request.data("last_name"), 
+				nickname=request.data("nickname"), 
+				skype_id=request.data("skype_id"), 
+				email=invite_obj.email,
+				job_title=request.data("job_title"), 
+				location=request.data("location"), 
+				work_auth=request.data("work_auth"), 
+				special_instruction=request.data.get("special_instruction"), 
+				salaryRange=request.data.get("salaryRange"), 
+				desired_work_location=json.loads(request.data.get("desired_work_location"))
+			)
+			# store docsuments likes profile picture, resume or reference
+			try:
+				profile_photo = request.FILES["profile_photo"]
+				candidate_obj.temp_profile_photo = profile_photo
+				candidate_obj.save()
+				user_obj.profile.profile_photo = profile_photo
+				user_obj.profile.save()
+			except:
+				pass
+			try:
+				resume = request.FILES["resume"]
+				UserDoc.objects.create(user=user_obj.profile.user, file=resume, type="resume")
+			except:
+				pass
+			try:
+				reference = request.FILES["reference"]
+				UserDoc.objects.create(user=user_obj.profile.user, file=reference, type="reference")
+			except:
+				pass
+			invite_obj.accepted = True
+			invite_obj.signup_status = "third"
 			invite_obj.save()
 			response["msg"] = "Signup success"
 			response["data"] = None
@@ -13294,5 +13363,30 @@ class SignupInvitedUser(APIView):
 			response["msg"] = "error"
 			response["error"] = str(e)
 			return Response(response, status=status.HTTP_400_BAD_REQUEST)
-		
 
+
+class SignupInvitedUserS3(APIView):
+	def post(self, request, uuid):
+		response = {}
+		try:
+			if invite_obj.email != request.data.get("email"):
+				response["msg"] = "Malformed data"
+				response["error"] = None
+				return Response(response, status=status.HTTP_400_BAD_REQUEST)
+			invite_obj = InvitedUser.objects.get(uuid=uuid)
+			user_obj = User.objects.get(email=invite_obj.email)
+			user_obj.profile.signup_completed = True
+			user_obj.profile.save()
+			invite_obj.signup_status = "completed"
+			invite_obj.save()
+			response["msg"] = "Signup success"
+			response["data"] = None
+			return Response(response, status=status.HTTP_200_OK)
+		except InvitedUser.DoesNotExist:
+			response["msg"] = "Invited user not found"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+			response["msg"] = "error"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)

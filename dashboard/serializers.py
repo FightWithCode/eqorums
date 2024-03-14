@@ -466,25 +466,12 @@ class InvitedUserSerializer(serializers.ModelSerializer):
 
 
 class SignupSerializer(serializers.Serializer):
-	client = serializers.IntegerField()
 	email = serializers.EmailField(max_length=255)
-	first_name = serializers.CharField(max_length=255)
-	last_name = serializers.CharField(max_length=255)
 	password = serializers.CharField(max_length=255)
 	confirm_password = serializers.CharField(max_length=255)
 	role = serializers.CharField(max_length=255)
-	phone_number = serializers.CharField(max_length=255, required=False)
-	cell_phone = serializers.CharField(max_length=255, required=False)
-	job_title = serializers.CharField(max_length=255, required=False)
-	skype_id = serializers.CharField(max_length=255, required=False)
-	profile_photo = serializers.FileField(max_length=255, required=False)
-	nickname = serializers.CharField(max_length=255, required=False)
-	location = serializers.CharField(max_length=255, required=False)
-	work_auth = serializers.CharField(max_length=255, required=False)
-	special_instruction = serializers.CharField(required=False)
-	salaryRange = serializers.CharField(required=False)
-	desired_work_location = serializers.JSONField(required=False)
-	
+	client = serializers.IntegerField()
+
 	def validate_email(self, value):
 		if User.objects.filter(email=value.lower()):
 			raise serializers.ValidationError("User with this email already exists!")
@@ -499,76 +486,16 @@ class SignupSerializer(serializers.Serializer):
 		if data["password"] != data["confirm_password"]:
 			raise serializers.ValidationError("Passwords didn't match!")
 		return data
-
 	
 	def create(self, validated_data):
 		# create user
-		user_obj = User(username=validated_data["email"], email=validated_data["email"], first_name=validated_data["first_name"], last_name=validated_data["last_name"])
+		user_obj = User(username=validated_data["email"], email=validated_data["email"])
 		user_obj.set_password(validated_data['password'])
 		user_obj.save()
 		client_obj = Client.objects.get(id=validated_data["client"])
 		if validated_data["role"] == "is_candidate":
-			profile_obj = Profile.objects.create(user=user_obj, nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"), is_candidate=True)
-			candidate_obj = Candidate.objects.create(created_by_client=client_obj, user=user_obj, name=validated_data["first_name"], last_name=validated_data["last_name"], nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), temp_profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"), location=validated_data.get("location"), work_auth=validated_data.get("work_auth"), special_instruction=validated_data.get("special_instruction", "None"), salaryRange=validated_data.get("salaryRange"), desired_work_location=json.loads(validated_data.get("desired_work_location")))
+			profile_obj = Profile.objects.create(user=user_obj, email=validated_data.get("email"), is_candidate=True, signup_completed=False)
 		else:
 			# create profile
-			profile_obj = Profile.objects.create(user=user_obj, nickname=validated_data.get("nickname"), skype_id=validated_data.get("skype_id"), email=validated_data.get("email"), profile_photo=validated_data.get("profile_photo"), job_title=validated_data.get("job_title"))
+			profile_obj = Profile.objects.create(user=user_obj, email=validated_data.get("email"), signup_completed=False)
 		return profile_obj
-
-# class SignupUserSerializer(serializers.ModelSerializer):
-# 	confirm_password = serializers.CharField(write_only=True)
-
-# 	class Meta:
-# 		model = User
-# 		fields = ["confirm_password", "email", "password", "first_name", "last_name"]
-
-# 	def validate_email(self, value):
-# 		if User.objects.filter(email=value.lower()):
-# 			raise serializers.ValidationError("User with this email already exists!")
-# 		return value
-
-
-
-# class SignupProfileSerializer(serializers.ModelSerializer):
-# 	user = SignupUserSerializer(required=True)
-	
-# 	class Meta:
-# 		model = Profile
-# 		fields = ["user", "phone_number", "cell_phone", "skype_id", "email", "job_title", "profile_photo"]
-	
-# 	def create(self, validated_data):
-# 		user_data = validated_data.pop("user")
-# 		user_data.pop("confirm_password")
-# 		user_obj = User(**user_data)
-# 		user_obj.set_password(user_data['password'])
-# 		user_obj.save()
-# 		profile_obj = Profile.objects.create(user=user_obj, **validated_data)
-# 		return profile_obj
-	
-# 	def validate_email(self, value):
-# 		if Profile.objects.filter(email=value.lower()) or User.objects.filter(email=value.lower()):
-# 			raise serializers.ValidationError("User with this email already exists!")
-# 		return value
-
-
-# class SignupCandidateSerializer(serializers.ModelSerializer):
-# 	profile = SignupProfileSerializer
-	
-# 	class Meta:
-# 		model = Candidate
-# 		fields = ["user", "nickname", "cell_phone", "skype_id", "email", "job_title", "profile_photo", "location", "work_auth", "special_instruction"]
-	
-# 	def create(self, validated_data):
-# 		user_data = validated_data.pop("user")
-# 		user_data.pop("confirm_password")
-# 		user_obj = User(**user_data)
-# 		user_obj.set_password(user_data['password'])
-# 		user_obj.save()
-# 		profile_obj = Profile.objects.create(user=user_obj, **validated_data)
-# 		candidate_obj = Candidate.objects.create(**validated_data)
-# 		return candidate_obj
-	
-# 	def validate_email(self, value):
-# 		if Profile.objects.filter(email=value.lower()) or User.objects.filter(email=value.lower()):
-# 			raise serializers.ValidationError("User with this email already exists!")
-# 		return value

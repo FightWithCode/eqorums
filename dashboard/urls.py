@@ -796,8 +796,19 @@ urlpatterns = [
         name="get-invited-user"
     ),
     path(
-        "signup-invited-user/<str:uuid>",
-        views.SignupInvitedUser.as_view(),
-        name="signup-invited-user"
+        "signup-user-s1/<str:uuid>",
+        views.SignupInviteUserS1.as_view(),
+        name="get-invited-user"
     ),
+    path(
+        "signup-user-s2/<str:uuid>",
+        views.SignupInvitedUserS2.as_view(),
+        name="get-invited-user"
+    ),
+    path(
+        "signup-user-s3/<str:uuid>",
+        views.SignupInvitedUserS3.as_view(),
+        name="get-invited-user"
+    ),
+    
 ]

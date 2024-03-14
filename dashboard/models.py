@@ -63,6 +63,7 @@ class Profile(models.Model):
     notification_data = models.JSONField(default=[])
     # For CA to check if its their first log to show form or to not.
     first_log = models.BooleanField(default=True)
+    signup_completed = models.BooleanField(default=True)
     cognito_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     dark_mode = models.BooleanField(default=False)
 
@@ -423,6 +424,7 @@ class InvitedUser(models.Model):
     client = models.ForeignKey("clients.Client", on_delete=models.CASCADE)
     role = models.CharField(max_length=255, default="is_candidate")
     accepted = models.BooleanField(default=None, null=True, blank=True)
+    signup_status = models.CharField(max_length=15, default="first") # first, second, third, completed
     created_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
