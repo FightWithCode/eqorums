@@ -13450,7 +13450,7 @@ class GetSignupStepData(APIView):
 				data["desired_work_location"] = candidate_obj.desired_work_location
 				if candidate_obj.profile_photo:
 					data["profile_photo"] = {}
-					data["profile_photo"]["name"] = candidate_obj.profile_photo.name
+					data["profile_photo"]["name"] = candidate_obj.profile_photo.name.split("/")[-1]
 					data["profile_photo"]["link"] = candidate_obj.profile_photo.url
 				else:
 					data["profile_photo"] = {}
@@ -13460,13 +13460,13 @@ class GetSignupStepData(APIView):
 			resume = {}
 			user_docs = UserDoc.objects.filter(user=user_obj, type="resume").last()
 			if user_docs:
-				resume["name"] = user_docs.file.name
+				resume["name"] = user_docs.file.name.split("/")[-1]
 				resume["link"] = user_docs.file.url
 			
 			reference = {}
 			user_docs = UserDoc.objects.filter(user=user_obj, type="reference").last()
 			if user_docs:
-				reference["name"] = user_docs.file.name
+				reference["name"] = user_docs.file.name.split("/")[-1]
 				reference["link"] = user_docs.file.url
 			data["resume"] = resume
 			data["reference"] = reference
