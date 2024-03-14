@@ -13149,11 +13149,14 @@ class UserList(APIView):
 			if "is_ae" in user.profile.roles:
 				c_ids = json.loads(user.profile.client)
 				sc_ids = [str(i) for i in c_ids]
-				user_objs = User.objects.filter(Q(profile__client__in=sc_ids) | Q(candidate__created_by_client__id__in=c_ids) | Q(profile__isnull=False))
+				user_objs = User.objects.filter(Q(profile__client__in=sc_ids) | Q(candidate__created_by_client__id__in=c_ids) | Q(profile__isnull=False)).filter(profile__signup_completed=True)
+				invited_users = InvitedUser.objects.filter(client__in=sc_ids).exclude(signup_status="completed")
 			elif user.is_superuser:
-				user_objs = User.objects.filter(profile__isnull=False)
+				user_objs = User.objects.filter(profile__isnull=False).filter(profile__signup_completed=True)
+				invited_users = InvitedUser.objects.all().exclude(signup_status="completed")
 			else:
-				user_objs = User.objects.filter(Q(profile__client=request.user.profile.client) | Q(candidate__created_by_client__id=int(request.user.profile.client)) | Q(profile__isnull=False))
+				user_objs = User.objects.filter(Q(profile__client=request.user.profile.client) | Q(candidate__created_by_client__id=int(request.user.profile.client)) | Q(profile__isnull=False)).filter(profile__signup_completed=True)
+				invited_users = InvitedUser.objects.all().exclude(client=request.user.profile.client, signup_status="completed")
 			data = []
 			for user in user_objs:
 				temp_dict = {}
@@ -13173,6 +13176,13 @@ class UserList(APIView):
 				else:
 					temp_dict["last_activity"] = None
 				temp_dict["email"] = user.candidate.first().email if user.candidate.first() else user.profile.email
+				data.append(temp_dict)
+			for user in invited_users:
+				temp_dict = {}
+				temp_dict["name"] = user.email
+				temp_dict["role"] = user.role
+				temp_dict["open_position"] = 0
+				temp_dict["email"] = user.email
 				data.append(temp_dict)
 			response["msg"] = "users fetched"
 			response["data"] = data
