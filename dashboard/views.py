@@ -13337,7 +13337,7 @@ class SignupInvitedUserS2(APIView):
 				candidate_obj.work_auth=request.data.get("work_auth"), 
 				candidate_obj.special_instruction=request.data.get("special_instruction"), 
 				candidate_obj.salaryRange=request.data.get("salaryRange"), 
-				candidate_obj.desired_work_location=json.loads(request.data.get("desired_work_location"))
+				candidate_obj.desired_work_location=request.data.get("desired_work_location", "").split(",")
 				candidate_obj.save()
 			except Candidate.DoesNotExist:
 				candidate_obj = Candidate.objects.create(
@@ -13353,7 +13353,7 @@ class SignupInvitedUserS2(APIView):
 					work_auth=request.data.get("work_auth"), 
 					special_instruction=request.data.get("special_instruction"), 
 					salaryRange=request.data.get("salaryRange"), 
-					desired_work_location=json.loads(request.data.get("desired_work_location"))
+					desired_work_location=request.data.get("desired_work_location", "").split(",")
 				)
 			# store docsuments likes profile picture, resume or reference
 			try:
