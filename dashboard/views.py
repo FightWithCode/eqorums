@@ -13450,8 +13450,8 @@ class GetSignupStepData(APIView):
 				data["desired_work_location"] = candidate_obj.desired_work_location
 				if candidate_obj.profile_photo:
 					data["profile_photo"] = {}
-					data["profile_photo"]["name"] = candidate_obj.profile_photo.name.split("/")[-1]
-					data["profile_photo"]["link"] = candidate_obj.profile_photo.url
+					data["profile_photo"]["name"] = candidate_obj.temp_profile_photo.name.split("/")[-1]
+					data["profile_photo"]["link"] = candidate_obj.temp_profile_photo.url
 				else:
 					data["profile_photo"] = {}
 			except:
