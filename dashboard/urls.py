@@ -810,5 +810,10 @@ urlpatterns = [
         views.SignupInvitedUserS3.as_view(),
         name="get-invited-user"
     ),
+    path(
+        "get-signup-data/<str:uuid>",
+        views.GetSignupStepData.as_view(),
+        name="get-signup-data"
+    ),
     
 ]

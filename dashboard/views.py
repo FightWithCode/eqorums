@@ -13415,3 +13415,42 @@ class SignupInvitedUserS3(APIView):
 			response["msg"] = "error"
 			response["error"] = str(e)
 			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetSignupStepData(APIView):
+	def get(self, request, uuid):
+		response = {}
+		try:
+			data = {}
+			invite_obj = InvitedUser.objects.get(uuid=uuid)
+			user_obj = User.objects.get(email=invite_obj.email)
+			data["role"] = invite_obj.role
+			data["email"] = user_obj.email
+			data["first_name"] = user_obj.first_name
+			data["last_name"] = user_obj.last_name
+			# update profile data
+			data["phone_number"] = user_obj.profile.phone_number
+			data["job_title"] = user_obj.profile.job_title
+			data["skype_id"] = user_obj.profile.skype_id
+			data["nickname"] = user_obj.profile.nickname
+			# update candidate data if candidate
+			try:
+				candidate_obj = Candidate.objects.get(user=user_obj)
+				data["location"] = candidate_obj.location
+				data["work_auth"] = candidate_obj.work_auth
+				data["special_instruction"] = candidate_obj.special_instruction
+				data["salaryRange"] = candidate_obj.salaryRange
+				data["desired_work_location"] = candidate_obj.desired_work_location
+			except:
+				pass
+			response["msg"] = "Data fetched!"
+			response["data"] = data
+			return Response(response, status=status.HTTP_200_OK)
+		except InvitedUser.DoesNotExist:
+			response["msg"] = "Invited user not found"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+			response["msg"] = "error"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
