@@ -815,5 +815,10 @@ urlpatterns = [
         views.GetSignupStepData.as_view(),
         name="get-signup-data"
     ),
+    path(
+        "send-abandoned-mail/<str:uuid>",
+        views.SendAbandonMail.as_view(),
+        name="send-abandoned-mail"
+    ),
     
 ]
