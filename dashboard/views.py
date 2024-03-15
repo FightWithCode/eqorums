@@ -13218,7 +13218,7 @@ class InviteUser(APIView):
 				try:
 					tasks.invite_user.delay(subject, html_content, 'text', [obj.email], reply_to, sender_name)
 				except Exception as e:
-							return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+					return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 			else:
 				response["msg"] = "User invite failed!"
 				response["errors"] = invited_serializer.errors
@@ -13470,6 +13470,33 @@ class GetSignupStepData(APIView):
 				reference["link"] = user_docs.file.url
 			data["resume"] = resume
 			data["reference"] = reference
+			response["msg"] = "Data fetched!"
+			response["data"] = data
+			return Response(response, status=status.HTTP_200_OK)
+		except InvitedUser.DoesNotExist:
+			response["msg"] = "Invited user not found"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+			response["msg"] = "error"
+			response["error"] = str(e)
+			return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SendAbandonMail(APIView):
+	def post(self, request, uuid):
+		response = {}
+		try:
+			data = {}
+			invite_obj = InvitedUser.objects.get(uuid=uuid)
+			subject = 'Signup process Abandoned!'
+			html_content = "You have abandoned your signup process. Please revist the link given in the mail to finish it."
+			reply_to = 'noreply@qorums.com'
+			sender_name = 'No Reply'
+			try:
+				tasks.invite_user.delay(subject, html_content, 'text', [invite_obj.email], reply_to, sender_name)
+			except Exception as e:
+				return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 			response["msg"] = "Data fetched!"
 			response["data"] = data
 			return Response(response, status=status.HTTP_200_OK)
