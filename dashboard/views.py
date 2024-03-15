@@ -13497,7 +13497,7 @@ class SendAbandonMail(APIView):
 				tasks.invite_user.delay(subject, html_content, 'text', [invite_obj.email], reply_to, sender_name)
 			except Exception as e:
 				return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-			response["msg"] = "Data fetched!"
+			response["msg"] = "Mail sent!"
 			response["data"] = data
 			return Response(response, status=status.HTTP_200_OK)
 		except InvitedUser.DoesNotExist:
