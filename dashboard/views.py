@@ -13490,7 +13490,8 @@ class SendAbandonMail(APIView):
 			data = {}
 			invite_obj = InvitedUser.objects.get(uuid=uuid)
 			subject = 'Signup process Abandoned!'
-			html_content = "You have abandoned your signup process. Please revist the link given in the mail to finish it."
+			link = f"{settings.DOMAIN}/signup-user?{invite_obj.uuid}"
+			html_content = "You have abandoned your signup process. Please revist the following link: {} to finish the sign up process.".format(link)
 			reply_to = 'noreply@qorums.com'
 			sender_name = 'No Reply'
 			try:
