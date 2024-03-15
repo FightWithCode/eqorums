@@ -4686,7 +4686,7 @@ class CandidateBasicDetailView(APIView):
 			response['personal_notes'] = candidate_obj.personal_notes
 			response['comments'] = candidate_obj.comments
 			response['current_position'] = candidate_obj.job_title
-			response['created_by_client'] = candidate_obj.created_by_client
+			response['created_by_client'] = candidate_obj.created_by_client.id
 			try:
 				docs = []
 				for doc in json.loads(candidate_obj.documents):

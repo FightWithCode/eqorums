@@ -68,7 +68,8 @@ INSTALLED_APPS = [
     'candidates',
     'openposition',
     'dashboard',
-    "hiringgroup"
+    "hiringgroup",
+    "schedules"
 ]
 
 REST_FRAMEWORK = {
