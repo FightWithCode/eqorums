@@ -1,6 +1,7 @@
+# django imports
+from django.contrib.auth.models import User
 # models import
 from dashboard.models import UserActivity
-
 ACTIVITY_URLS = [
     "dashboard-api/login"
     "clients/client-data"
@@ -19,7 +20,7 @@ class UserLogMiddleware:
         response = self.get_response(request)
         
         # logic that needs to be executed before the view is called  equivalent to process_response
-        user_obj = response.data.get("user")
+        user_obj = User.objects.get(id=response.data.get("user"))
         if request.path_info in ACTIVITY_URLS and response.status_code in [200, 201]:
             UserActivity.objects.create(
                 user=user_obj,
