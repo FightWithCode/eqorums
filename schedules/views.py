@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 class GetAuthCode(APIView):
     def get(self, request, code):
         try:
-            url = "api.cronofy.com/oauth/token"
+            url = "https://api.cronofy.com/oauth/token"
 
             payload = json.dumps({
                 "client_id": settings.CRONOFY_CLIENT_ID,
