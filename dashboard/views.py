@@ -13149,27 +13149,30 @@ class UserList(APIView):
 			if "is_ae" in user.profile.roles:
 				c_ids = json.loads(user.profile.client)
 				sc_ids = [str(i) for i in c_ids]
-				user_objs = User.objects.filter(Q(profile__client__in=sc_ids) | Q(candidate__created_by_client__id__in=c_ids) | Q(profile__isnull=False)).filter(profile__signup_completed=True)
-				invited_users = InvitedUser.objects.filter(client__in=sc_ids).exclude(signup_status="completed")
+				user_objs = User.objects.filter(Q(profile__client__in=sc_ids) | Q(candidate__created_by_client__id__in=c_ids) | Q(profile__isnull=False))
+				invited_users = InvitedUser.objects.filter(client__in=sc_ids, signup_status__in=["first", "second"])
 			elif user.is_superuser:
-				user_objs = User.objects.filter(profile__isnull=False).filter(profile__signup_completed=True)
-				invited_users = InvitedUser.objects.all().exclude(signup_status="completed")
+				user_objs = User.objects.filter(profile__isnull=False)
+				invited_users = InvitedUser.objects.all().exclude(signup_status="completed", signup_status__in=["first", "second"])
 			else:
-				user_objs = User.objects.filter(Q(profile__client=request.user.profile.client) | Q(candidate__created_by_client__id=int(request.user.profile.client)) | Q(profile__isnull=False)).filter(profile__signup_completed=True)
-				invited_users = InvitedUser.objects.all().exclude(client=request.user.profile.client, signup_status="completed")
+				user_objs = User.objects.filter(Q(profile__client=request.user.profile.client) | Q(candidate__created_by_client__id=int(request.user.profile.client)) | Q(profile__isnull=False))
+				invited_users = InvitedUser.objects.all().exclude(client=request.user.profile.client, signup_status__in=["first", "second"])
 			data = []
 			for user in user_objs:
 				temp_dict = {}
 				temp_dict["name"] = user.get_full_name()
+				temp_dict["id"] = user.id
 				if user.profile.roles:
 					temp_dict["role"] = user.profile.roles[0]
 					temp_dict["open_position"] = OpenPosition.objects.filter(drafted=False, archieved=False, filled=False, trashed=False, htms=user.profile).count()
+					temp_dict["user_id"] = "U" + user.profile.created_at.strftime("%y%m%d%H%M%S")
 				elif user.profile.is_candidate:
 					temp_dict["role"] = "is_candidate"
 					temp_dict["open_position"] = CandidateAssociateData.objects.filter(candidate__user=user).count()
+					temp_dict["user_id"] = "C" + user.profile.created_at.strftime("%y%m%d%H%M%S")
 				else:
 					continue
-				temp_dict["user_id"] = user.profile.id
+				
 				temp_dict["user_since"] = user.profile.created_at.strftime("%b %d, %Y")
 				if UserActivity.objects.filter(user=user).order_by("-created_at").first():
 					temp_dict["last_activity"] = UserActivity.objects.filter(user=user).order_by("-created_at").first().activity_name
