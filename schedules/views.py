@@ -21,7 +21,7 @@ class GetAuthCode(APIView):
                 "client_secret": settings.CRONOFY_CLIENT_SECRET,
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": "http://localhost:4200/get-cronofy-access-token"
+                "redirect_uri": "http://localhost:4200/ca/my-calender"
             })
             headers = {
                 'Content-Type': 'application/json'
