@@ -5,7 +5,7 @@ app_name = "schedules"
 
 urlpatterns = [
     path(
-        "get-auth-code",
+        "get-auth-code/<str:code>",
         views.GetAuthCode.as_view(),
         name="get-auth-code",
     )
