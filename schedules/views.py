@@ -33,6 +33,6 @@ class GetAuthCode(APIView):
             if response.status_code == 200:
                 return Response(response.json(), status=status.HTTP_200_OK)
             else:
-                return Response(response.json, status=status.HTTP_400_BAD_REQUEST)
+                return Response(response.json(), status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"msg": "error", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
