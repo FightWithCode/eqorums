@@ -702,6 +702,8 @@ class LoginView(KnoxLoginView):
 		data.data['tnc_accepted'] = user_profile.tnc_accepted
 		data.data['profile_id'] = user_profile.id
 		data.data['dark_mode'] = user_profile.dark_mode
+		data.data['user'] = user.id
+		data.data["msg"] = "Logged in"
 		return data
 
 

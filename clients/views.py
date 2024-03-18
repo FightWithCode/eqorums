@@ -231,6 +231,8 @@ class SingleClientDataView(APIView):
 					response['notitication-error'] = str(e)
 				# create email templates
 				create_email_templates(client_obj)
+				response["msg"] = "Client created"
+				response["user"] = request.user.id
 				return Response(response, status=status.HTTP_200_OK)
 			else:
 				return Response({'msg': str(client_serializer.errors)}, status=status.HTTP_400_BAD_REQUEST)
