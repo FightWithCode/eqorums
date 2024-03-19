@@ -82,7 +82,7 @@ class GetElementToken(APIView):
             url = "https://api.cronofy.com/v1/element_tokens"
             obj, created = CronofyAuthCode.objects.get_or_create(user=request.user)
             if created:
-                response["msg"] = "User not authenticated with Cronofy. Please authenticate"
+                response["msg"] = "User not authenticated with Cronofy. Please authenticate!"
                 return Response(response, status=status.HTTP_401_UNAUTHORIZED)
 
             payload = json.dumps({

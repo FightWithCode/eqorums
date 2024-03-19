@@ -13208,12 +13208,27 @@ class InviteUser(APIView):
 			if invited_serializer.is_valid():
 				obj = invited_serializer.save()
 				# send mail
-				subject = 'Invitation to join Qorums'
-				d = {
-					"company": obj.client.company_name,
-				}
 				link = f"{settings.DOMAIN}/signup-user?{obj.uuid}"
-				html_content = "You have been invited to join qorums. Please go to below link to proceed: {}".format(link)
+				if obj.role == "is_candidate":
+					subject = 'You have been added as a candidate by {}!'.format(obj.client.company_name)
+					d = {
+						"company": obj.client.company_name,
+						"link": link,
+						"email": obj.email
+					}
+					htmly_b = get_template('invite_candidate.html')
+					html_content = htmly_b.render(d)
+					# html_content = "You have been invited to join qorums. Please go to below link to proceed: {}".format(link)
+				else:
+					subject = 'You have been added as a user in Qorums!'
+					d = {
+						"company": obj.client.company_name,
+						"link": link,
+						"email": obj.email
+					}
+					htmly_b = get_template('invite_user.html')
+					html_content = htmly_b.render(d)
+					# html_content = "You have been invited to join qorums. Please go to below link to proceed: {}".format(link)
 				try:
 					reply_to = request.user.profile.email
 					sender_name = request.user.get_full_name()
