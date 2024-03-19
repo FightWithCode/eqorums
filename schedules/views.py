@@ -56,7 +56,7 @@ class GetAuthCode(APIView):
 class ListCalendars(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, code):
+    def get(self, request):
         try:
             url = "https://api.cronofy.com/v1/calendars"
             access_token = GetAccessToken(request.user)
@@ -64,7 +64,7 @@ class ListCalendars(APIView):
             headers = {
                 'Authorization': 'Bearer {}'.format(access_token)
             }
-            response = requests.request("POST", url, headers=headers, data=payload)
+            response = requests.request("GET", url, headers=headers, data=payload)
             if response.status_code == 200:
                 return Response({"data": response.json(), "msg": "Calendars Fetched"}, status=status.HTTP_200_OK)
             else:

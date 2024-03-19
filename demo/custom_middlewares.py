@@ -3,11 +3,11 @@ from django.contrib.auth.models import User
 # models import
 from dashboard.models import UserActivity
 ACTIVITY_URLS = [
-    "dashboard-api/login"
-    "clients/client-data"
-    "clients/delete-clients"
-    "clients/suspend-clients"
-    "clients/activate-clients"
+    "/dashboard-api/login",
+    "/clients/client-data",
+    "/clients/delete-clients",
+    "/clients/suspend-clients",
+    "/clients/activate-clients",
 ]
 
 class UserLogMiddleware:
