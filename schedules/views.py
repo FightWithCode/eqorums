@@ -27,9 +27,7 @@ class GetAuthCode(APIView):
                 'Content-Type': 'application/json'
             }
 
-            response = requests.request("GET", url, headers=headers, data=payload)
-
-            print(response.text)
+            response = requests.request("POST", url, headers=headers, data=payload)
             if response.status_code == 200:
                 return Response({"data": response.json()}, status=status.HTTP_200_OK)
             else:
