@@ -8,5 +8,10 @@ urlpatterns = [
         "get-auth-code/<str:code>",
         views.GetAuthCode.as_view(),
         name="get-auth-code",
-    )
+    ),
+    path(
+        "list-calendars",
+        views.ListCalendars.as_view(),
+        name="list-calendars",
+    ),
 ]
