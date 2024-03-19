@@ -13208,7 +13208,7 @@ class InviteUser(APIView):
 			if invited_serializer.is_valid():
 				obj = invited_serializer.save()
 				# send mail
-				link = f"{settings.DOMAIN}/signup-user?{obj.uuid}"
+				link = f"http:{settings.DOMAIN}/signup-user?{obj.uuid}"
 				if obj.role == "is_candidate":
 					subject = 'You have been added as a candidate by {}!'.format(obj.client.company_name)
 					d = {
