@@ -13236,7 +13236,7 @@ class InviteUser(APIView):
 					reply_to = 'noreply@qorums.com'
 					sender_name = 'No Reply'
 				try:
-					tasks.invite_user.delay(subject, html_content, 'text', [obj.email], reply_to, sender_name)
+					tasks.invite_user.delay(subject, html_content, 'html', [obj.email], reply_to, sender_name)
 				except Exception as e:
 					return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 			else:
