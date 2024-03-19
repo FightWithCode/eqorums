@@ -72,3 +72,45 @@ class ListCalendars(APIView):
         except Exception as e:
             return Response({"msg": "error", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
+
+class GetElementToken(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        try:
+            response = {}
+            url = "https://api.cronofy.com/v1/element_tokens"
+            obj, created = CronofyAuthCode.objects.get_or_create(user=request.user)
+            if created:
+                response["msg"] = "User not authenticated with Cronofy. Please authenticate"
+                return Response(response, status=status.HTTP_401_UNAUTHORIZED)
+
+            payload = json.dumps({
+                "version": "1",
+                "permissions": [
+                    "account_management",
+                    "availability",
+                    "managed_availability"
+                ],
+                "subs": [
+                    obj.sub
+                ],
+                "origin": request.GET.get("origin")
+            })
+
+            headers = {
+                'Authorization': 'Bearer {}'.format(settings.CRONOFY_CLIENT_SECRET),
+                'Content-Type': 'application/json'
+            }
+
+            api_resp = requests.request("POST", url, headers=headers, data=payload)
+            if api_resp.status_code in [200, 201]:
+                response["msg"] = "success"
+                response["data"] = api_resp.json()
+                return Response(response, status=status.HTTP_200_OK)
+            else:
+                response["msg"] = "error"
+                response["data"] = api_resp.json()
+                return Response(response, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"msg": "error", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

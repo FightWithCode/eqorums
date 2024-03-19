@@ -14,4 +14,9 @@ urlpatterns = [
         views.ListCalendars.as_view(),
         name="list-calendars",
     ),
+    path(
+        "get-element-token",
+        views.GetElementToken.as_view(),
+        name="get-element-token",
+    ),
 ]
