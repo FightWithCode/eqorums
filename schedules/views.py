@@ -40,12 +40,12 @@ class GetAuthCode(APIView):
                 obj, created = CronofyAuthCode.objects.get_or_create(user=request.user)
                 if created:
                     obj.access_token = resp_data.get("access_token")
-                    obj.refresh_token=resp_data.get("access_token")
+                    obj.refresh_token=resp_data.get("refresh_token")
                     obj.sub = resp_data.get("sub")
                     obj.account_id = resp_data.get("account_id")
                 else:
                     obj.access_token = resp_data.get("access_token")
-                    obj.refresh_token=resp_data.get("access_token")
+                    obj.refresh_token=resp_data.get("refresh_token")
                 obj.save()
                 return Response({"data": "token generated"}, status=status.HTTP_200_OK)
             else:
@@ -137,6 +137,7 @@ class CheckAccessToken(APIView):
                 else:
                     # get refresh token and auth token
                     url = "https://api.cronofy.com/oauth/token"
+                    print(obj.refresh_token, obj.access_token)
                     payload = json.dumps({
                         "client_id": settings.CRONOFY_CLIENT_ID,
                         "client_secret": settings.CRONOFY_CLIENT_SECRET,
@@ -147,6 +148,7 @@ class CheckAccessToken(APIView):
                         'Content-Type': 'application/json'
                     }
                     cronofy_resp = requests.request("POST", url, headers=headers, data=payload)
+                    print(cronofy_resp.text)
                     if cronofy_resp.status_code == 200:
                         resp_data = cronofy_resp.json()
                         obj.access_token = resp_data.get("access_token")
