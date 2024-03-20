@@ -46,6 +46,8 @@ class GetAuthCode(APIView):
                 else:
                     obj.access_token = resp_data.get("access_token")
                     obj.refresh_token=resp_data.get("refresh_token")
+                    obj.sub = resp_data.get("sub")
+                    obj.account_id = resp_data.get("account_id")
                 obj.save()
                 return Response({"data": "token generated"}, status=status.HTTP_200_OK)
             else:
