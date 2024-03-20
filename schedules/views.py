@@ -125,13 +125,13 @@ class CheckAccessToken(APIView):
             response = {}
             obj, created = CronofyAuthCode.objects.get_or_create(user=request.user)
             if created:
-                response["msg"] = "User not authenticated with Cronofy. Please authenticate!"
-                return Response(response, status=status.HTTP_401_UNAUTHORIZED)
+                response["msg"] = "invalid token"
+                return Response(response, status=status.HTTP_200_OK)
             else:
                 current_time = datetime.now()
                 three_hours_ago = current_time - timedelta(minutes=175)
                 if obj.updated_at > three_hours_ago:
-                    response["msg"] = "Already authenticated and token valid."
+                    response["msg"] = "valid token"
                     response["data"] = None
                     return Response(response, status=status.HTTP_200_OK)
                 else:
@@ -151,12 +151,12 @@ class CheckAccessToken(APIView):
                         resp_data = response.json()
                         obj.access_token = resp_data.get("access_token")
                         obj.save()
-                        response["msg"] = "Already authenticated and token genereated"
+                        response["msg"] = "valid token"
                         response["data"] = None
                         return Response(response, status=status.HTTP_200_OK)
                     else:
-                        response["msg"] = "Error generating token re authenticate"
+                        response["msg"] = "invalid token"
                         response["data"] = response.json()
-                        return Response(response, status=status.HTTP_401_UNAUTHORIZED)
+                        return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"msg": "error", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
