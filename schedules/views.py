@@ -147,7 +147,7 @@ class CheckAccessToken(APIView):
                         'Content-Type': 'application/json'
                     }
                     cronofy_resp = requests.request("POST", url, headers=headers, data=payload)
-                    if response.status_code == 200:
+                    if cronofy_resp.status_code == 200:
                         resp_data = cronofy_resp.json()
                         obj.access_token = resp_data.get("access_token")
                         obj.save()
