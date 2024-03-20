@@ -19,4 +19,9 @@ urlpatterns = [
         views.GetElementToken.as_view(),
         name="get-element-token",
     ),
+    path(
+        "check-access-token",
+        views.CheckAccessToken.as_view(),
+        name="check-access-token",
+    ),
 ]
