@@ -129,7 +129,7 @@ class CheckAccessToken(APIView):
                 return Response(response, status=status.HTTP_200_OK)
             else:
                 current_time = datetime.now()
-                three_hours_ago = current_time - timedelta(minutes=1)
+                three_hours_ago = current_time - timedelta(minutes=175)
                 if obj.updated_at > three_hours_ago:
                     response["msg"] = "valid token"
                     response["data"] = None
