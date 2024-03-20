@@ -156,7 +156,7 @@ class CheckAccessToken(APIView):
                         return Response(response, status=status.HTTP_200_OK)
                     else:
                         response["msg"] = "invalid token"
-                        response["data"] = response.json()
+                        response["data"] = cronofy_resp.json()
                         return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"msg": "error", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
