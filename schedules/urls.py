@@ -24,4 +24,9 @@ urlpatterns = [
         views.CheckAccessToken.as_view(),
         name="check-access-token",
     ),
+    path(
+        "get-user-calendar",
+        views.GetUserCalendar.as_view(),
+        name="get-user-calendar",
+    ),
 ]

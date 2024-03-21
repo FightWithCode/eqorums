@@ -1,6 +1,13 @@
+# python imports
+import json
+
+# django imports
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+
+# model imports
+from dashboard.models import Profile
 
 
 class CronofyAuthCode(models.Model):
