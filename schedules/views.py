@@ -236,8 +236,17 @@ class GetUserCalendar(APIView):
 				htm_deadlines = HTMsDeadline.objects.filter(deadline__date=single_date, htm__id=htm)
 				for deadline in htm_deadlines:
 					temp_dict = {}
+					# add dummy data
+					if str_date.startswith("11"):
+						temp_dict["name"] = "htm"
+						temp_dict["msg"] = "Deadline to complete all Interviews for position Analysit"
+						continue
+					if str_date.startswith("17"):
+						temp_dict["name"] = "htm"
+						temp_dict["msg"] = "Deadline to complete all Interviews for position My Position"
+						continue
 					temp_dict["name"] = "htm"
-					temp_dict["msg"] = "Deadline for {} to complete all Interviews for position {}".format(deadline.htm.user.get_full_name(), deadline.open_position.position_title)
+					temp_dict["msg"] = "Deadline to complete all Interviews for position {}".format(deadline.open_position.position_title)
 					curr_deadline.append(temp_dict)	
 				data[str_date]["deadlines"] = curr_deadline
 			response["data"] = data
