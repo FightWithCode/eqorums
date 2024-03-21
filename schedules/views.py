@@ -194,32 +194,42 @@ class GetUserCalendar(APIView):
 				str_date = single_date.strftime("%d-%m-%Y")
 				data[str_date] = {}
 				schedules = []
+				curr_deadline = []
+				# add dummy data remove later
+				if str_date.startswith("11"):
+					temp_dict["id"] = 2
+					temp_dict['candidate'] = "Json Roy"
+					temp_dict['date'] = "Mar 11, 2024 10:30 PM"
+					temp_dict['interviewer_names'] = "Json Sanga"
+					temp_dict["accepted"] = True
+					schedules.append(temp_dict)
+					data[str_date]["scheduled"] = schedules
+					# add dummy data
+					temp_dict = {}
+					temp_dict["name"] = "htm"
+					temp_dict["msg"] = "Deadline to complete all Interviews for position Analysit"
+					curr_deadline.append(temp_dict)
+					data[str_date]["deadlines"] = curr_deadline
+					continue
+				if str_date.startswith("15"):
+					temp_dict["id"] = 2
+					temp_dict['candidate'] = "Jason Jordan"
+					temp_dict['date'] = "Mar 15, 2024 10:30 PM"
+					temp_dict['interviewer_names'] = "Jason Smith"
+					temp_dict["accepted"] = False
+					schedules.append(temp_dict)
+					data[str_date]["scheduled"] = schedules
+					temp_dict = {}
+					temp_dict["name"] = "htm"
+					temp_dict["msg"] = "Deadline to complete all Interviews for position Analysit"
+					curr_deadline.append(temp_dict)
+					data[str_date]["deadlines"] = curr_deadline
+					continue
 				try:
 					# Get scheduled
 					scheduled = Interview.objects.filter(htm__id__in=[int(htm)], interview_date_time__year=single_date.year, interview_date_time__month=single_date.month, interview_date_time__day=single_date.day)
 					for schedule in scheduled:
 						temp_dict = {}
-						# add dummy data remove later
-						if str_date.startswith("11"):
-							temp_dict["id"] = 2
-							temp_dict['candidate'] = "Json Roy"
-							temp_dict['date'] = "Mar 11, 2024 10:30 PM"
-							interview_names = []
-							for i in schedule.htm.all():
-								interview_names.append(i.user.get_full_name())
-							temp_dict['interviewer_names'] = "Json Sanga"
-							temp_dict["accepted"] = True
-							continue
-						if str_date.startswith("15"):
-							temp_dict["id"] = 2
-							temp_dict['candidate'] = "Jason Jordan"
-							temp_dict['date'] = "Mar 15, 2024 10:30 PM"
-							interview_names = []
-							for i in schedule.htm.all():
-								interview_names.append(i.user.get_full_name())
-							temp_dict['interviewer_names'] = "Jason Smith"
-							temp_dict["accepted"] = False
-							continue
 						temp_dict["id"] = schedule.id
 						temp_dict['candidate'] = "{} {}".format(schedule.candidate.name, schedule.candidate.last_name)
 						temp_dict['date'] = schedule.interview_date_time.strftime("%b %d, %Y %I:%M %p")
@@ -232,19 +242,9 @@ class GetUserCalendar(APIView):
 				except Exception as e:
 					data["error"] = str(e)
 				data[str_date]["scheduled"] = schedules
-				curr_deadline = []
 				htm_deadlines = HTMsDeadline.objects.filter(deadline__date=single_date, htm__id=htm)
+				temp_dict = {}
 				for deadline in htm_deadlines:
-					temp_dict = {}
-					# add dummy data
-					if str_date.startswith("11"):
-						temp_dict["name"] = "htm"
-						temp_dict["msg"] = "Deadline to complete all Interviews for position Analysit"
-						continue
-					if str_date.startswith("17"):
-						temp_dict["name"] = "htm"
-						temp_dict["msg"] = "Deadline to complete all Interviews for position My Position"
-						continue
 					temp_dict["name"] = "htm"
 					temp_dict["msg"] = "Deadline to complete all Interviews for position {}".format(deadline.open_position.position_title)
 					curr_deadline.append(temp_dict)	
@@ -257,7 +257,7 @@ class GetUserCalendar(APIView):
 			)
 
 
-class GetHTMAvailability(APIView):
+class GetOpenPositionSchedules(APIView):
 	permission_classes = (permissions.IsAuthenticated,)
 
 	def get(self, request):
@@ -277,20 +277,9 @@ class GetHTMAvailability(APIView):
 			for single_date in daterange(start_date, end_date + timedelta(days=1)):
 				str_date = single_date.strftime("%d-%m-%Y")
 				data[str_date] = {}
-				availabilities = []
 				schedules = []
 				try:
 					for htm in htms_list:
-						availability_obj = HTMAvailability.objects.get(htm_id=int(htm))
-						avails = [avail for avail in json.loads(availability_obj.availability) if avail["date"].startswith(single_date.strftime("%Y-%m-%d"))]
-						combined_hours = []
-						for avail in avails:
-							try:
-								for hour_dict in avail["hours"]:
-									combined_hours.append(hour_dict)
-							except Exception as e:
-								pass
-						availabilities.append({"htm": htm, "avails": {"day": 1, "hours": single_date.strftime("%Y-%m-%d"), "hours": combined_hours}})
 						# Get scheduled
 						scheduled = Interview.objects.filter(htm__id__in=[int(htm)], interview_date_time__year=single_date.year, interview_date_time__month=single_date.month, interview_date_time__day=single_date.day)
 						for schedule in scheduled:
@@ -310,7 +299,6 @@ class GetHTMAvailability(APIView):
 							schedules.append(temp_dict)
 				except Exception as e:
 					print(e)
-				data[str_date]["availabilities"] = availabilities
 				data[str_date]["scheduled"] = schedules
 				if single_date.date() == open_position_obj.target_deadline:
 					data[str_date]["target_deadline"] = True

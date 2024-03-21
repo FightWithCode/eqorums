@@ -29,4 +29,9 @@ urlpatterns = [
         views.GetUserCalendar.as_view(),
         name="get-user-calendar",
     ),
+    path(
+        "get-openposition-schedules",
+        views.GetOpenPositionSchedules.as_view(),
+        name="get-openposition-schedules",
+    ),
 ]
