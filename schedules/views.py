@@ -199,11 +199,28 @@ class GetUserCalendar(APIView):
 					scheduled = Interview.objects.filter(htm__id__in=[int(htm)], interview_date_time__year=single_date.year, interview_date_time__month=single_date.month, interview_date_time__day=single_date.day)
 					for schedule in scheduled:
 						temp_dict = {}
+						# add dummy data remove later
+						if str_date.startswith("11"):
+							temp_dict["id"] = 2
+							temp_dict['candidate'] = "Json Roy"
+							temp_dict['date'] = "Mar 11, 2024 10:30 PM"
+							interview_names = []
+							for i in schedule.htm.all():
+								interview_names.append(i.user.get_full_name())
+							temp_dict['interviewer_names'] = "Json Sanga"
+							temp_dict["accepted"] = True
+							continue
+						if str_date.startswith("15"):
+							temp_dict["id"] = 2
+							temp_dict['candidate'] = "Jason Jordan"
+							temp_dict['date'] = "Mar 15, 2024 10:30 PM"
+							interview_names = []
+							for i in schedule.htm.all():
+								interview_names.append(i.user.get_full_name())
+							temp_dict['interviewer_names'] = "Jason Smith"
+							temp_dict["accepted"] = False
+							continue
 						temp_dict["id"] = schedule.id
-						if request.user.profile == schedule.created_by:
-							temp_dict["created_by_current"] = True
-						else:
-							temp_dict["created_by_current"] = False
 						temp_dict['candidate'] = "{} {}".format(schedule.candidate.name, schedule.candidate.last_name)
 						temp_dict['date'] = schedule.interview_date_time.strftime("%b %d, %Y %I:%M %p")
 						interview_names = []
